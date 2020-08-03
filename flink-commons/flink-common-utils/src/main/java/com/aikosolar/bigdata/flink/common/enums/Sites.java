@@ -1,7 +1,5 @@
 package com.aikosolar.bigdata.flink.common.enums;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -132,7 +130,7 @@ public enum Sites {
     }
 
     public static Sites toSite(String site) {
-        if (StringUtils.isBlank(site)) {
+        if (site == null || "".equals(site.trim())) {
             return null;
         }
         return Arrays.stream(Sites.values()).filter(s -> s.accept(site)).findFirst().orElse(null);

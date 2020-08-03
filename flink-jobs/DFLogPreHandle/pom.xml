@@ -20,6 +20,11 @@
             <version>1.0.0</version>
         </dependency>
         <dependency>
+            <groupId>com.aikosolar.bigdata</groupId>
+            <artifactId>flink-job-kafka-base</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
         </dependency>

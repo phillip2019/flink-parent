@@ -3,6 +3,7 @@ package com.aikosolar.bigdata
 import java.util.Properties
 
 import com.aikosolar.app.conf.DFLogPreHandleConfig
+import com.aikosolar.bigdata.flink.job.FLinkKafkaRunner
 import com.aikosolar.bigdata.flink.job.base.FLinkRunner
 import com.alibaba.fastjson.JSONPath
 import org.apache.commons.lang3.StringUtils
@@ -43,25 +44,12 @@ import org.slf4j.{Logger, LoggerFactory}
   *
   * @author carlc
   */
-object DFLogPreHandlerJob extends FLinkRunner[DFLogPreHandleConfig] {
+object DFLogPreHandlerJob extends FLinkKafkaRunner[DFLogPreHandleConfig] {
   lazy val L: Logger = LoggerFactory.getLogger(DFLogPreHandlerJob.getClass)
 
-  override def run(env: StreamExecutionEnvironment, c: DFLogPreHandleConfig): Unit = {
+  override def run0(env: StreamExecutionEnvironment, c: DFLogPreHandleConfig, rawKafkaSource: DataStream[String]): Unit = {
 
-    val props = new Properties()
-    props.setProperty("bootstrap.servers", c.bootstrapServers)
-    props.setProperty("group.id", c.groupId)
-
-    val source = new FlinkKafkaConsumer010[String](c.topic, new SimpleStringSchema, props)
-
-    c.resetStrategy.toLowerCase() match {
-      case "earliest" => source.setStartFromEarliest()
-      case "latest" => source.setStartFromLatest()
-      case "groupoffsets" => source.setStartFromGroupOffsets()
-      case "none" =>
-    }
-
-    val stream = env.addSource(source)
+    val stream = rawKafkaSource
       .filter(StringUtils.isNotBlank(_))
       .map(x => {
         val hostname = JSONPath.eval(x,"$.host.name").toString
