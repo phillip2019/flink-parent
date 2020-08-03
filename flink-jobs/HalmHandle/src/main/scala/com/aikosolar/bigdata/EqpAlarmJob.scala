@@ -86,10 +86,12 @@ object EqpAlarmJob extends FLinkKafkaRunner[AllEqpConfig] {
 
 
     val config:Config = ConfigFactory.load()
-    val conf = new JdbcConnectionOptions(config.getString("connection.drivername"),
-      config.getString("connection.url"),config.getString("connection.username"),
-      config.getString("connection.password"))
-
+    val conf = new JdbcConnectionOptions.Builder()
+      .withDriverName(config.getString("connection.drivername"))
+      .withUrl(config.getString("connection.url"))
+      .withUsername(config.getString("connection.username"))
+      .withPassword(config.getString("connection.password"))
+      .build()
 
     val actionSql =
       """

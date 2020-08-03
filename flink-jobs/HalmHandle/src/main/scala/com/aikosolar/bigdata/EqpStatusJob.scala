@@ -70,6 +70,11 @@ object EqpStatusJob extends FLinkKafkaRunner[AllEqpConfig] {
 
         result
       })
+      .filter(r=>r.containsKey("eqpid"))
+      .filter(r=>r.containsKey("newstatus"))
+      .filter(r=>r.containsKey("oldstatus"))
+      .filter(r=>r.containsKey("newtime"))
+      .filter(r=>r.containsKey("oldtime"))
       .filter(r => StringUtils.isNotBlank(r.getOrDefault("eqpid", "").toString))
       .map(m => {
 
@@ -79,12 +84,14 @@ object EqpStatusJob extends FLinkKafkaRunner[AllEqpConfig] {
         val newtime = m.getOrDefault("newtime", "").toString
         val oldtime = m.getOrDefault("oldtime", "").toString
 
-        val status = m.getOrDefault("status", "").toString
+
 
         val eqp=eqpid.substring(3)
 
         var tubeid=""
-        if(eqp.toUpperCase().startsWith("DF") || eqp.toUpperCase().startsWith("PE") || eqp.toUpperCase().startsWith("PR")){
+       /*
+       val status = m.getOrDefault("status", "").toString
+       if(eqp.toUpperCase().startsWith("DF") || eqp.toUpperCase().startsWith("PE") || eqp.toUpperCase().startsWith("PR")){
           val tubeidmap: Map[String, String] = new HashMap[String, String]()
           val tubeid1=m.getOrDefault("tubeid1", "").toString
           val tubeid2=m.getOrDefault("tubeid2", "").toString
@@ -101,7 +108,7 @@ object EqpStatusJob extends FLinkKafkaRunner[AllEqpConfig] {
             case _ => ""
           }
 
-        }
+        }*/
 
 
         (Hist(eqpid, newstatus, newstatus, oldstatus, newtime, oldtime, null, null, tubeid), Update(eqpid, newstatus, newtime, "false"))
@@ -119,9 +126,13 @@ object EqpStatusJob extends FLinkKafkaRunner[AllEqpConfig] {
     val updateStream = histStream.getSideOutput(new OutputTag[Update]("UpdateStream"))
 
     val config:Config = ConfigFactory.load()
-    val conf = new JdbcConnectionOptions(config.getString("connection.drivername"),
-      config.getString("connection.url"),config.getString("connection.username"),
-      config.getString("connection.password"))
+
+    val conf = new JdbcConnectionOptions.Builder()
+      .withDriverName(config.getString("connection.drivername"))
+      .withUrl(config.getString("connection.url"))
+      .withUsername(config.getString("connection.username"))
+      .withPassword(config.getString("connection.password"))
+      .build()
 
     //    val conf = new JdbcConnectionOptions("oracle.jdbc.OracleDriver", "jdbc:oracle:thin:@172.16.111.29:1521:ORCL", "APIPRO", "APIPRO")
     val histSql =
