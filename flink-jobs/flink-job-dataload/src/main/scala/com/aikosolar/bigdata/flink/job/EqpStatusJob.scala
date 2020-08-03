@@ -1,14 +1,13 @@
-package com.aikosolar.bigdata
+package com.aikosolar.bigdata.flink.job
 
 import java.sql.{PreparedStatement, Timestamp}
 import java.text.SimpleDateFormat
 import java.util.{HashMap, Map}
 
-import com.aikosolar.bigdata.conf.AllEqpConfig
 import com.aikosolar.bigdata.flink.connectors.jdbc.JdbcSink
 import com.aikosolar.bigdata.flink.connectors.jdbc.conf.JdbcConnectionOptions
 import com.aikosolar.bigdata.flink.connectors.jdbc.writter.JdbcWriter
-import com.aikosolar.bigdata.flink.job.FLinkKafkaRunner
+import com.aikosolar.bigdata.flink.job.conf.AllEqpConfig
 import com.alibaba.fastjson.JSON
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.commons.lang3.StringUtils
@@ -21,9 +20,10 @@ import scala.collection.JavaConversions._
 
 /**
   *
-  * Halm日志数据预处理器
+  * 所有设备Status日志数据采集
   *
-  * input: kafka
+  * input: kafka  topic: data-collection-eqp-status
+  * kafka 消息格式：
   * "EqpID": "Z2-TAH08",		设备编号
   * "NewStatus": "SBY",		新状态
   * "NewTime": "2020-07-30 08:51:58",	新时间

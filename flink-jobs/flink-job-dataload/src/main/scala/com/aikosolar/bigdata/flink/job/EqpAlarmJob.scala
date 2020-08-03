@@ -1,10 +1,9 @@
-package com.aikosolar.bigdata
+package com.aikosolar.bigdata.flink.job
 
 import java.util.{HashMap, Map}
 
-import com.aikosolar.bigdata.conf.AllEqpConfig
 import com.aikosolar.bigdata.flink.connectors.jdbc.conf.JdbcConnectionOptions
-import com.aikosolar.bigdata.flink.job.FLinkKafkaRunner
+import com.aikosolar.bigdata.flink.job.conf.AllEqpConfig
 import com.alibaba.fastjson.JSON
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.commons.lang3.StringUtils
@@ -15,13 +14,25 @@ import scala.collection.JavaConversions._
 
 /**
   *
-  * Halm日志数据预处理器
+  * 所有设备Alarm 日志数据采集
   *
-  * input: kafka
+  * input: kafka  topic: data-collection-eqp-alarm
+ * 消息格式
+  * {
+  * "EqpID": "Z2-DF02",
+  * "Status": "",
+  * "AlarmText": "User defined (28)",
+  * "AlarmCode": "",
+  * "PutTime": "2020/07/30 07:29:11",
+  * "TubeID1"：状态 0,
+  * "TubeID2"：状态 0,
+  * "TubeID3"：状态 1,
+  * "TubeID4"：状态 0,
+  * "TubeID5"：状态 0,
+  * }
+  * output: oracle
   *
-  * output: hbase
-  *
-  * 逻辑: 根据业务逻辑将数据数据处理以后写入hbase中,
+  * 逻辑: 根据业务逻辑将数据数据处理以后写入oracle中,
   *
   * 运行参数:
   *
@@ -79,7 +90,6 @@ object EqpAlarmJob extends FLinkKafkaRunner[AllEqpConfig] {
         val serorClear =null
         val status = m.getOrDefault("status", "").toString
         val alarmId = m.getOrDefault("alarmcode", "").toString
-
 
          Action(eqpid, putTime, alarmId,status,alarmText, serorClear, "alarm", null, factory)
       })

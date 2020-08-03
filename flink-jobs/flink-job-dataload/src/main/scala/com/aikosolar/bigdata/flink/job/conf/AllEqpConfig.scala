@@ -1,4 +1,4 @@
-package com.aikosolar.bigdata.conf
+package com.aikosolar.bigdata.flink.job.conf
 
 import java.util
 import java.util.Map
