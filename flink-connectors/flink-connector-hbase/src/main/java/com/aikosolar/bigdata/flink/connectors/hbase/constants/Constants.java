@@ -7,4 +7,5 @@ public interface Constants {
     String topic = "_topic_";
     String ROW_KEY = "_row_key_";
     String DEFAULT_FAMILY_KEY = "default";
+    String DEFAULT_FAMILY_VALUE = "cf";
 }

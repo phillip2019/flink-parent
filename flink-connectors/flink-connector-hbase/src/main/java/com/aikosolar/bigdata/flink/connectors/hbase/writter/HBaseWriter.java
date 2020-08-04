@@ -17,8 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author carlc
@@ -40,8 +38,7 @@ public class HBaseWriter<IN> implements IHBaseWriter<IN> {
         org.apache.hadoop.conf.Configuration conf = HBaseConfiguration.create();
         writerConfig.getHbaseConfig().forEach(conf::set);
 
-        ExecutorService threads = Executors.newFixedThreadPool(4);
-        this.connection = ConnectionFactory.createConnection(conf, threads);
+        this.connection = ConnectionFactory.createConnection(conf);
     }
 
     @Override
