@@ -1,9 +1,11 @@
 package com.aikosolar.bigdata.flink.connectors.hbase;
 
+import com.aikosolar.bigdata.flink.connectors.hbase.constants.Constants;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
+import org.apache.flink.util.Preconditions;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
@@ -12,6 +14,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,7 +30,18 @@ public class DynamicHBaseSink extends RichSinkFunction<Map<String, Object>> {
 
     private Map<String/*topic*/, String/*hTableName*/> tableMapping;
 
+    private Map<String/*topic*/, String/*family*/> familyMapping;
+
     private transient Connection connection;
+
+    public DynamicHBaseSink(Map<String, String> tableMapping,
+                            Map<String, String> familyMapping) {
+
+        Preconditions.checkNotNull(tableMapping);
+
+        this.tableMapping = tableMapping;
+        this.familyMapping = familyMapping == null ? new HashMap<>() : familyMapping;
+    }
 
     @Override
     public void open(Configuration parameters) throws Exception {
@@ -42,7 +56,7 @@ public class DynamicHBaseSink extends RichSinkFunction<Map<String, Object>> {
     @Override
     public void invoke(Map<String, Object> data, Context context) throws Exception {
         // S1: 获取Topic
-        Object topic = data.remove("_topic_");
+        Object topic = data.remove(Constants.topic);
         if (topic == null || StringUtils.isBlank(topic.toString())) {
             return;
         }
@@ -52,10 +66,13 @@ public class DynamicHBaseSink extends RichSinkFunction<Map<String, Object>> {
             return;
         }
         // 获取rowKey
-        Object rowKey = data.remove("_row_key_");
+        Object rowKey = data.remove(Constants.ROW_KEY);
         if (rowKey == null || StringUtils.isBlank(topic.toString())) {
             return;
         }
+        // 获取列簇(默认:cf)
+        String family = familyMapping.getOrDefault(topic, familyMapping.getOrDefault(Constants.DEFAULT_FAMILY_KEY, "cf"));
+
         Table table = null;
         try {
             table = connection.getTable(TableName.valueOf(hTableName));
@@ -65,7 +82,7 @@ public class DynamicHBaseSink extends RichSinkFunction<Map<String, Object>> {
                 String name = en.getKey();
                 Object value = en.getValue();
                 if (value != null) {
-                    put.addColumn(Bytes.toBytes("c1"), Bytes.toBytes(name), Bytes.toBytes(value.toString()));
+                    put.addColumn(Bytes.toBytes(family), Bytes.toBytes(name), Bytes.toBytes(value.toString()));
                 }
             }
             table.put(put);
