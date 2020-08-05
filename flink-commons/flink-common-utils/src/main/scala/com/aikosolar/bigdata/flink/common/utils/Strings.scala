@@ -22,4 +22,11 @@ object Strings {
   def humpToUnderLowerString(str: String): String = {
     humpToUnderLine(str).toLowerCase()
   }
+
+ //判断对象是否为空或者空字符串
+  def getNotnull(obj: Object): String ={
+    val result=if(obj==null || "".equals(obj)) "" else obj.toString
+    result
+  }
+
 }
