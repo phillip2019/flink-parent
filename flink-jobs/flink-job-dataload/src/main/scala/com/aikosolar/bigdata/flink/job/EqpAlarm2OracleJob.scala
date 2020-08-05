@@ -1,8 +1,11 @@
 package com.aikosolar.bigdata.flink.job
 
+import java.sql.PreparedStatement
 import java.util.{HashMap, Map}
 
+import com.aikosolar.bigdata.flink.connectors.jdbc.JdbcSink
 import com.aikosolar.bigdata.flink.connectors.jdbc.conf.JdbcConnectionOptions
+import com.aikosolar.bigdata.flink.connectors.jdbc.writter.JdbcWriter
 import com.aikosolar.bigdata.flink.job.conf.AllEqpConfig
 import com.alibaba.fastjson.JSON
 import com.typesafe.config.{Config, ConfigFactory}
@@ -52,18 +55,19 @@ import scala.collection.JavaConversions._
   *
   * @author carlc
   */
-object EqpAlarmJob extends FLinkKafkaRunner[AllEqpConfig] {
+object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
   /**
     * 业务方法[不需自己调用env.execute()]
     */
   override def run0(env: StreamExecutionEnvironment, c: AllEqpConfig, rawKafkaSource: DataStream[String]): Unit = {
+
     val actionStream: DataStream[Action] = rawKafkaSource
       .map(JSON.parseObject(_))
       .map(jsonObj => {
         val result: Map[String, AnyRef] = new HashMap[String, AnyRef]()
         for (en <- jsonObj.entrySet) {
           val key = c.fieldMapping.getOrDefault(en.getKey, en.getKey)
-          val value = if (en.getValue == null) "" else en.getValue
+          val value = en.getValue
           // 统一转换为小写字符串,可以避免很多不必要的麻烦
           result.putIfAbsent(key.toLowerCase(), value)
         }
@@ -88,7 +92,7 @@ object EqpAlarmJob extends FLinkKafkaRunner[AllEqpConfig] {
         }
         val alarmText = m.getOrDefault("alarmtext", "").toString
         val serorClear =null
-        val status = m.getOrDefault("status", "").toString
+        val status = if(m.getOrDefault("status", null)==null) null else m.getOrDefault("status", null).toString
         val alarmId = m.getOrDefault("alarmcode", "").toString
 
          Action(eqpid, putTime, alarmId,status,alarmText, serorClear, "alarm", null, factory)
@@ -96,13 +100,13 @@ object EqpAlarmJob extends FLinkKafkaRunner[AllEqpConfig] {
 
 
     val config:Config = ConfigFactory.load()
-    val conf = new JdbcConnectionOptions.Builder()
+
+     val conf = new JdbcConnectionOptions.Builder()
       .withDriverName(config.getString("connection.drivername"))
       .withUrl(config.getString("connection.url"))
       .withUsername(config.getString("connection.username"))
       .withPassword(config.getString("connection.password"))
       .build()
-
     val actionSql =
       """
         |INSERT INTO APIPRO.EAS_MACHINEDATA_ACTION
@@ -111,7 +115,7 @@ object EqpAlarmJob extends FLinkKafkaRunner[AllEqpConfig] {
       """.stripMargin
 
     actionStream.print("EqpAlarm")
-   /* actionStream.addSink(new JdbcSink[Action](conf, actionSql, new JdbcWriter[Action] {
+    actionStream.addSink(new JdbcSink[Action](conf, actionSql, new JdbcWriter[Action] {
       override def accept(stmt: PreparedStatement, data: Action): Unit = {
         stmt.setString(1, data.machineid)
         stmt.setString(2, data.occurtime)
@@ -123,7 +127,7 @@ object EqpAlarmJob extends FLinkKafkaRunner[AllEqpConfig] {
         stmt.setString(8, data.updatetime)
         stmt.setString(9, data.factory)
       }
-    }))*/
+    }))
 
 
   }
