@@ -47,8 +47,7 @@ public class SimpleHBaseTableSink extends RichSinkFunction<Map<String, Object>> 
 
         org.apache.hadoop.conf.Configuration conf = HBaseConfiguration.create();
         this.writerConfig.getHbaseConfig().forEach(conf::set);
-        ExecutorService threads = Executors.newFixedThreadPool(4);
-        this.connection = ConnectionFactory.createConnection(conf, threads);
+        this.connection = ConnectionFactory.createConnection(conf);
     }
 
     @Override
@@ -73,6 +72,14 @@ public class SimpleHBaseTableSink extends RichSinkFunction<Map<String, Object>> 
             table.put(put);
         } finally {
             IOUtils.closeQuietly(table);
+        }
+    }
+
+    @Override
+    public void close() throws Exception {
+        if(this.connection != null) {
+            this.connection.close();
+            this.connection = null;
         }
     }
 }
