@@ -101,8 +101,9 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
 
 
     val updateStream = histStream.getSideOutput(new OutputTag[Update]("UpdateStream"))
-    updateStream.print("update")
     val config:Config = ConfigFactory.load()
+
+
 
     val conf = new JdbcConnectionOptions.Builder()
       .withDriverName(config.getString("connection.drivername"))
@@ -114,23 +115,25 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
     val histSql =
       """
         |INSERT INTO APIPRO.EAS_EQUIPMENT_STATUS_HIST
-        | (NAME, STATUSCODENAME, NEWSTATUSNAME, OLDSTATUSNAME, LASTSTATUSDATE, OLDSTATUSDATE, USETIME, UPDATETIME)
-        | VALUES(?,?,?,?,?,?,?,?)
+        | (NAME, STATUSCODENAME, NEWSTATUSNAME, OLDSTATUSNAME, LASTSTATUSDATE, OLDSTATUSDATE, USETIME, UPDATETIME, TUBEID)
+        | VALUES(?,?,?,?,?,?,?,?,?)
       """.stripMargin
 
     histStream.addSink(new JdbcSink[Hist](conf, histSql, new JdbcWriter[Hist] {
       override def accept(stmt: PreparedStatement, data: Hist): Unit = {
-        val formatter: SimpleDateFormat =  if(data.oldstatusdate.contains("-")) new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        else if(data.oldstatusdate.contains("/")) new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
+        val formatter: SimpleDateFormat = if (data.oldstatusdate.contains("-")) new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        else if (data.oldstatusdate.contains("/")) new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
         else new SimpleDateFormat("yyyyMMddHHmmss")
+
         stmt.setString(1, data.name)
         stmt.setString(2, data.statuscodename)
         stmt.setString(3, data.newstatusname)
         stmt.setString(4, data.oldstatusname)
-        stmt.setString(5, data.laststatusdate)
+        stmt.setTimestamp(5, new Timestamp(formatter.parse(data.laststatusdate).getTime))
         stmt.setTimestamp(6, new Timestamp(formatter.parse(data.oldstatusdate).getTime))
         stmt.setObject(7, null) //todo 确认
-        stmt.setTimestamp(8, null)
+        stmt.setObject(8, null)
+        stmt.setString(9,data.tubeid)
       }
     }))
 
@@ -175,9 +178,10 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         stmt.setString(4, "false")
       }
     }))
+
   }
 
-  case class Hist(name: String, statuscodename: String, newstatusname: String, oldstatusname: String, laststatusdate: String, oldstatusdate: String, usetime: String = null, updatetime: String = null, tubrid: String)
+  case class Hist(name: String, statuscodename: String, newstatusname: String, oldstatusname: String, laststatusdate: String, oldstatusdate: String, usetime: String = null, updatetime: String = null, tubeid: String)
 
   case class Update(name: String, statuscodename: String, laststatusdate: String, prdtimeflag: String)
 

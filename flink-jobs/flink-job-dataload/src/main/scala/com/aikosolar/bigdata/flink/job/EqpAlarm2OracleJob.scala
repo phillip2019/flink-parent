@@ -46,11 +46,11 @@ import scala.collection.JavaConversions._
   * -ytm 2048 \
   * -ynm HalmFull \
   * --class com.aikosolar.bigdata.HalmFullJob  /root/halm/HalmHandle-1.1.0.jar \
-  * --job-name=DFAlarmJob
+  * --job-name=eqpalarmJob
   * --bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
-  * --group.id=df-alarm-group
-  * --reset.strategy=latest
-  * --hbase.table=xxxx
+  * --group.id=eqp-alarm-group_test
+  * --reset.strategy=earliest
+  * --hbase.table=ods:ods_f_eqp_all_alarm
   * --topic=data-collection-eqp-alarm
   *
   * @author carlc
@@ -114,7 +114,6 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         | VALUES(?,?,?,?,?,?,?,?,?)
       """.stripMargin
 
-    actionStream.print("EqpAlarm")
     actionStream.addSink(new JdbcSink[Action](conf, actionSql, new JdbcWriter[Action] {
       override def accept(stmt: PreparedStatement, data: Action): Unit = {
         stmt.setString(1, data.machineid)

@@ -129,6 +129,7 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
         }
       })
       .filter(_ != null)
+    kafkaSource.print()
     kafkaSource.addSink(new SimpleHBaseTableSink(Builder.me().build(), c.tableName))
   }
 
