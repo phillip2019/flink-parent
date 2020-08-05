@@ -99,7 +99,7 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
     })
 
     val updateStream = histStream.getSideOutput(new OutputTag[Update]("UpdateStream"))
-
+    updateStream.print("update")
     val config:Config = ConfigFactory.load()
 
     val conf = new JdbcConnectionOptions.Builder()
@@ -109,43 +109,21 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
       .withPassword(config.getString("connection.password"))
       .build()
 
-    val histSql =
-      """
-        |INSERT INTO APIPRO.EAS_EQUIPMENT_STATUS_HIST
-        | (NAME, STATUSCODENAME, NEWSTATUSNAME, OLDSTATUSNAME, LASTSTATUSDATE, OLDSTATUSDATE, USETIME, UPDATETIME)
-        | VALUES(?,?,?,?,?,?,?,?)
-      """.stripMargin
-    //histStream.print("histStream")
     updateStream.print("updateStream")
-   /* histStream.addSink(new JdbcSink[Hist](conf, histSql, new JdbcWriter[Hist] {
-      override def accept(stmt: PreparedStatement, data: Hist): Unit = {
-        val formatter: SimpleDateFormat =  if(data.oldstatusdate.contains("-")) new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        else if(data.oldstatusdate.contains("/")) new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
-        else new SimpleDateFormat("yyyyMMddHHmmss")
-        stmt.setString(1, data.name)
-        stmt.setString(2, data.statuscodename)
-        stmt.setString(3, data.newstatusname)
-        stmt.setString(4, data.oldstatusname)
-        stmt.setString(5, data.laststatusdate)
-        stmt.setTimestamp(6, new Timestamp(formatter.parse(data.oldstatusdate).getTime))
-        stmt.setObject(7, null) //todo 确认
-        stmt.setTimestamp(8, null)
-      }
-    }))*/
-
 
     val checkSql="select count(1) from APIPRO.EAS_EQUIPMENT_STATUS_UPDATE_K where NAME=?"
     val updateSql="update APIPRO.EAS_EQUIPMENT_STATUS_UPDATE_K set STATUSCODENAME=?,LASTSTATUSDATE=?,PRDTIMEFLAG=? where NAME=?"
     val insertSql = "INSERT INTO APIPRO.EAS_EQUIPMENT_STATUS_UPDATE_K (NAME,STATUSCODENAME,LASTSTATUSDATE,PRDTIMEFLAG) VALUES (?,?,?,?)"
-    updateStream.addSink(new JdbcMergeSink[Update](conf,checkSql,updateSql,insertSql, new JdbcWriter[Update] {
+
+    updateStream.addSink(new JdbcMergeSink[Update](conf, checkSql, updateSql, insertSql, new JdbcWriter[Update] {
       override def exsits(stmt: PreparedStatement, data: Update): Boolean = {
 
         stmt.setString(1, data.name)
-        var result:Boolean=true
+        var result: Boolean = true
         try {
-          val resultSet = stmt.executeQuery()
-          result = if (resultSet.getInt(1) > 0) true else false
-        }  catch {
+          val rs = stmt.executeQuery()
+          result = if (rs.next()) rs.getInt(1) > 0 else false
+        } catch {
           case e: Exception =>
             throw e
         }
@@ -172,23 +150,7 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         stmt.setTimestamp(3, new Timestamp(formatter.parse(data.laststatusdate).getTime))
         stmt.setString(4, "false")
       }
-
-
     }))
-
-
-    /*val updateSql = "INSERT INTO APIPRO.EAS_EQUIPMENT_STATUS_UPDATE_K (STATUSCODENAME,LASTSTATUSDATE,PRDTIMEFLAG,NAME) VALUES (?,?,?,?)"
-    updateStream.addSink(new JdbcSink[Update](conf, updateSql, new JdbcWriter[Update] {
-      override def accept(stmt: PreparedStatement, data: Update): Unit = {
-        val formatter: SimpleDateFormat =  if(data.laststatusdate.contains("-")) new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        else if(data.laststatusdate.contains("/")) new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
-        else new SimpleDateFormat("yyyyMMddHHmmss")
-        stmt.setString(1, data.name)
-        stmt.setString(2, data.statuscodename)
-        stmt.setTimestamp(3, new Timestamp(formatter.parse(data.laststatusdate).getTime))
-        stmt.setString(4, "false")
-      }
-    }))*/
   }
 
   case class Hist(name: String, statuscodename: String, newstatusname: String, oldstatusname: String, laststatusdate: String, oldstatusdate: String, usetime: String = null, updatetime: String = null, tubrid: String)

@@ -22,7 +22,7 @@ import java.text.ParseException;
 /**
  * @author carlc
  */
-public class JdbcMergeSink<T> extends RichSinkFunction<T> implements CheckpointedFunction {
+public class JdbcMergeSink<T> extends RichSinkFunction<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcMergeSink.class);
 
     private final String checkSql;
@@ -59,10 +59,10 @@ public class JdbcMergeSink<T> extends RichSinkFunction<T> implements Checkpointe
     public void invoke(T value, Context context) throws IOException {
         for (int i = 1; i <= connectionOptions.getMaxRetries(); i++) {
             try {
-                if(this.writer.exsits(checkStmt, value)){
+                if (this.writer.exsits(checkStmt, value)) {
                     this.writer.update(updateStmt, value);
-                    updateStmt.execute();
-                }else{
+                    updateStmt.executeUpdate();
+                } else {
                     this.writer.accept(stmt, value);
                     stmt.executeUpdate();
                 }
@@ -80,8 +80,8 @@ public class JdbcMergeSink<T> extends RichSinkFunction<T> implements Checkpointe
                         IOUtils.closeQuietly(updateStmt);
                         IOUtils.closeQuietly(checkStmt);
                         this.stmt = connection.prepareStatement(this.insertSql);
-                        this.stmt = connection.prepareStatement(this.updateSql);
-                        this.stmt = connection.prepareStatement(this.checkSql);
+                        this.updateStmt = connection.prepareStatement(this.updateSql);
+                        this.checkStmt = connection.prepareStatement(this.checkSql);
                     }
                 } catch (Exception ex) {
                     LOGGER.error("JDBC connection is not valid, and reestablish connection failed.", ex);
@@ -103,40 +103,19 @@ public class JdbcMergeSink<T> extends RichSinkFunction<T> implements Checkpointe
         }
     }
 
-    @Override
-    public void initializeState(FunctionInitializationContext context) {
-    }
-
-    @Override
-    public void snapshotState(FunctionSnapshotContext context) throws Exception {
-        if (stmt != null && updateStmt != null && checkSql != null) {
-            this.writer.flush();
-        }
-    }
 
     @Override
     public void close() {
-        if (stmt != null && updateStmt != null && checkSql != null) {
+        if (stmt != null) {
             try {
                 this.writer.flush();
             } catch (Exception e) {
                 // no-op
             }
-
-            try {
-                IOUtils.closeQuietly(stmt);
-                IOUtils.closeQuietly(updateStmt);
-                IOUtils.closeQuietly(checkStmt);
-            } catch (Exception e) {
-                // no-op
-            }
+            IOUtils.closeQuietly(stmt);
         }
-        if (connection != null) {
-            try {
-                this.connection.close();
-            } catch (Exception e) {
-                // no-op
-            }
-        }
+        IOUtils.closeQuietly(updateStmt);
+        IOUtils.closeQuietly(checkStmt);
+        IOUtils.closeQuietly(connection);
     }
 }
