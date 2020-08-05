@@ -6,7 +6,7 @@ import java.util.regex.Pattern
 
 import com.aikosolar.bigdata.flink.job.base.FLinkRunner
 import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaConfig
-import com.aikosolar.bigdata.flink.job.serialization.KafkaTopicDeserializationSchema
+import com.aikosolar.bigdata.flink.job.serialization.KafkaKeyValueDeserializationSchema
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010
 
@@ -33,10 +33,11 @@ abstract class FLinkKafkaWithTopicRunner[C <: FLinkKafkaConfig] extends FLinkRun
     // 当开启checkpoint,[enable.auto.commit]和[auto.commit.interval.ms]参数将被忽略
     // 这里设置的目的仅仅为了在KafkaManager中能看到消费组偏移量
     props.setProperty("enable.auto.commit", "true")
+    val deserialization = new KafkaKeyValueDeserializationSchema(keyType = getKeyType(), charset = getCharset())
     val source: FlinkKafkaConsumer010[(String, String)] = if (c.topicRegex) {
-      new FlinkKafkaConsumer010[(String, String)](Pattern.compile(c.topic), new KafkaTopicDeserializationSchema, props)
+      new FlinkKafkaConsumer010[(String, String)](Pattern.compile(c.topic), deserialization, props)
     } else {
-      new FlinkKafkaConsumer010[(String, String)](c.topic.split(",").toList, new KafkaTopicDeserializationSchema, props)
+      new FlinkKafkaConsumer010[(String, String)](c.topic.split(",").toList, deserialization, props)
     }
     c.resetStrategy.toLowerCase() match {
       case "earliest" => source.setStartFromEarliest()
@@ -46,6 +47,14 @@ abstract class FLinkKafkaWithTopicRunner[C <: FLinkKafkaConfig] extends FLinkRun
     }
     val rawKafkaSource: DataStream[(String, String)] = env.addSource(source)
     run0(env, c, rawKafkaSource)
+  }
+
+  def getKeyType(): String = {
+    "topic"
+  }
+
+  def getCharset(): String = {
+    "utf-8"
   }
 
   /**

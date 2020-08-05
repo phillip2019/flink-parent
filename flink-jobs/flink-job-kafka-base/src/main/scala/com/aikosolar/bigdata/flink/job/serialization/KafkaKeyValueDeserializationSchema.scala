@@ -12,12 +12,16 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
   *
   * @author carlc
   */
-class KafkaTopicDeserializationSchema(charset: String = "utf-8") extends KafkaDeserializationSchema[(String, String)] {
+class KafkaKeyValueDeserializationSchema(keyType: String = "topic", charset: String = "utf-8") extends KafkaDeserializationSchema[(String, String)] {
 
   override def isEndOfStream(t: (String, String)) = false
 
   override def deserialize(r: ConsumerRecord[Array[Byte], Array[Byte]]): (String, String) =
-    (r.topic(), new String(r.value(), charset))
+    if ("topic".equals(keyType))
+      (r.topic(), new String(r.value(), charset))
+    else
+      (new String(r.key(), charset), new String(r.value(), charset))
+
 
   override def getProducedType: TypeInformation[(String, String)] = Types.TUPLE[(String, String)]
 }
