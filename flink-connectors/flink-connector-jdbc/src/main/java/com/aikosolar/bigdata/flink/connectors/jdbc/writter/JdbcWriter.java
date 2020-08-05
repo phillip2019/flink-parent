@@ -12,4 +12,12 @@ import java.sql.SQLException;
 public interface JdbcWriter<T> extends BiConsumerWithException<PreparedStatement, T, SQLException>, Serializable {
     default void flush() {
     }
+
+    default void update(PreparedStatement ps, T date) {
+
+    }
+
+    default boolean exsits(PreparedStatement ps, T date) {
+        throw new UnsupportedOperationException();
+    }
 }
