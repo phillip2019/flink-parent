@@ -1,15 +1,24 @@
 package com.aikosolar.bigdata.flink.job
 
+import java.sql.{PreparedStatement, Timestamp}
+import java.text.SimpleDateFormat
 import java.util.{HashMap, Map}
 
 import com.aikosolar.bigdata.flink.common.enums.Sites
 import com.aikosolar.bigdata.flink.common.utils.{Dates, Strings}
 import com.aikosolar.bigdata.flink.connectors.hbase.SimpleHBaseTableSink
 import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
-import com.aikosolar.bigdata.flink.job.conf.DataLoaderConf
+import com.aikosolar.bigdata.flink.connectors.jdbc.JdbcSink
+import com.aikosolar.bigdata.flink.connectors.jdbc.conf.JdbcConnectionOptions
+import com.aikosolar.bigdata.flink.connectors.jdbc.writter.JdbcWriter
+import com.aikosolar.bigdata.flink.job.conf.{AllEqpConfig, DataLoaderConf}
 import com.alibaba.fastjson.JSON
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.lang3.StringUtils
+import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.apache.flink.streaming.api.scala._
+import org.apache.flink.util.Collector
 
 import scala.collection.JavaConversions._
 
@@ -48,7 +57,7 @@ import scala.collection.JavaConversions._
  *
   * @author carlc
   */
-object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
+object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
   /**
     * 业务方法[不需自己调用env.execute()]
     */
@@ -56,7 +65,7 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
     val kafkaSource: DataStream[Map[String, AnyRef]] = rawKafkaSource
       .map(JSON.parseObject(_))
       .map(jsonObj => {
-        val result: Map[String, AnyRef] = new HashMap[String, AnyRef]()
+        var result: Map[String, AnyRef] = new HashMap[String, AnyRef]()
         for (en <- jsonObj.entrySet) {
           val key = c.fieldMapping.getOrDefault(en.getKey, en.getKey)
           val value = en.getValue
@@ -64,12 +73,12 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
           // 统一转换为小写字符串,可以避免很多不必要的麻烦
           result.putIfAbsent(key.toLowerCase(), value)
         }
-        if (result.containsKey("eqpid") && result.containsKey("newtime")
-          && result.containsKey("newstatus") && result.containsKey("oldstatus")
-          && result.containsKey("oldtime")) {
-          try{
+
+        if (result.containsKey("eqpid") && Strings.getNotnull(result.get("eqpid")).length>2
+          && result.containsKey("puttime") && Strings.getNotnull(result.get("eqpid")).length>=1) {
+          try {
             val eqpId = result.get("eqpid").toString
-            val putTime = result.get("newtime").toString
+            val putTime = result.get("puttime").toString
 
             val site = eqpId.substring(0, 2)
             val factory = Sites.toFactoryId(site)
@@ -85,20 +94,52 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
             result.putIfAbsent("shift", Dates.toShift(putTime, Dates.fmt2, site))
             result.putIfAbsent("long_time", (rawLongTime / 1000).toString)
             result.putIfAbsent("create_time", Dates.now(Dates.fmt2))
-          }
-          catch {
-            case e: Exception => {
-              println("message error")
+
+
+            var tubeid = ""
+            val eqp = eqpId.substring(3)
+            val status = result.getOrDefault("status", "")
+            if (!"".equals(status) && status != null) {
+              if (eqp.toUpperCase().startsWith("DF") || eqp.toUpperCase().startsWith("PE") || eqp.toUpperCase().startsWith("PR")) {
+                val tubeid1 = Strings.getNotnull(result.getOrDefault("tubeid1", ""))
+                val tubeid2 = Strings.getNotnull(result.getOrDefault("tubeid2", ""))
+                val tubeid3 = Strings.getNotnull(result.getOrDefault("tubeid3", ""))
+                val tubeid4 = Strings.getNotnull(result.getOrDefault("tubeid4", ""))
+                val tubeid5 = Strings.getNotnull(result.getOrDefault("tubeid5", ""))
+
+                tubeid = status match {
+                  case status if (status.toString.trim.equals(tubeid1)) => "TubeID1"
+                  case status if (status.toString.trim.equals(tubeid2)) => "TubeID2"
+                  case status if (status.toString.trim.equals(tubeid3)) => "TubeID3"
+                  case status if (status.toString.trim.equals(tubeid4)) => "TubeID4"
+                  case status if (status.toString.trim.equals(tubeid5)) => "TubeID5"
+                  case _ => ""
+                }
+              }
             }
-          }finally {
-            null
+            result.putIfAbsent("tubeid", tubeid)
+            result.remove("tubeid1")
+            result.remove("tubeid2")
+            result.remove("tubeid3")
+            result.remove("tubeid4")
+            result.remove("tubeid5")
           }
+            catch {
+              case e: Exception => {
+               println("message error")
+              }
+            }finally {
+              null
+            }
+
           result
-        } else {
+          }
+      else {
           null
         }
       })
       .filter(_ != null)
+
     if(!"prod".equals(c.runMode)){
       kafkaSource.print()
     }
