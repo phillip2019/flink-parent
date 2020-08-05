@@ -116,7 +116,7 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
     val insertSql = "INSERT INTO APIPRO.EAS_EQUIPMENT_STATUS_UPDATE_K (NAME,STATUSCODENAME,LASTSTATUSDATE,PRDTIMEFLAG) VALUES (?,?,?,?)"
 
     updateStream.addSink(new JdbcMergeSink[Update](conf, checkSql, updateSql, insertSql, new JdbcWriter[Update] {
-      override def exsits(stmt: PreparedStatement, data: Update): Boolean = {
+      override def exists(stmt: PreparedStatement, data: Update): Boolean = {
 
         stmt.setString(1, data.name)
         var result: Boolean = true

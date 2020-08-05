@@ -17,7 +17,7 @@ public interface JdbcWriter<T> extends BiConsumerWithException<PreparedStatement
 
     }
 
-    default boolean exsits(PreparedStatement ps, T date) {
+    default boolean exists(PreparedStatement ps, T date) {
         throw new UnsupportedOperationException();
     }
 }

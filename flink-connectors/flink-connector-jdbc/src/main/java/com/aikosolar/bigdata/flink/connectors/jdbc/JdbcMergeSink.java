@@ -6,9 +6,6 @@ import com.aikosolar.bigdata.flink.connectors.jdbc.connection.JdbcConnectionProv
 import com.aikosolar.bigdata.flink.connectors.jdbc.connection.SimpleJdbcConnectionProvider;
 import com.aikosolar.bigdata.flink.connectors.jdbc.writter.JdbcWriter;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.state.FunctionInitializationContext;
-import org.apache.flink.runtime.state.FunctionSnapshotContext;
-import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +56,7 @@ public class JdbcMergeSink<T> extends RichSinkFunction<T> {
     public void invoke(T value, Context context) throws IOException {
         for (int i = 1; i <= connectionOptions.getMaxRetries(); i++) {
             try {
-                if (this.writer.exsits(checkStmt, value)) {
+                if (this.writer.exists(checkStmt, value)) {
                     this.writer.update(updateStmt, value);
                     updateStmt.executeUpdate();
                 } else {
