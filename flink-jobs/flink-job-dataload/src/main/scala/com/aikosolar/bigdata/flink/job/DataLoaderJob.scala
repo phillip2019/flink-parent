@@ -10,6 +10,7 @@ import com.aikosolar.bigdata.flink.job.conf.DataLoaderConf
 import com.alibaba.fastjson.JSON
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.flink.streaming.api.scala._
+import org.apache.log4j.Logger
 
 import scala.collection.JavaConversions._
 
@@ -19,6 +20,7 @@ import scala.collection.JavaConversions._
   * @author carlc
   */
 object DataLoaderJob extends FLinkKafkaRunner[DataLoaderConf] {
+  val logger:Logger= Logger.getLogger(DataLoaderJob.getClass)
   /**
     * --job-name=DataLoaderJob
     * --time-characteristic=ProcessingTime
@@ -41,6 +43,7 @@ object DataLoaderJob extends FLinkKafkaRunner[DataLoaderConf] {
     * -f=Tube10Text1=text1
     */
   override def run0(env: StreamExecutionEnvironment, c: DataLoaderConf, rawKafkaSource: DataStream[String]): Unit = {
+
     val kafkaSource: DataStream[Map[String, AnyRef]] = rawKafkaSource
       .map(JSON.parseObject(_))
       .map(jsonObj => {

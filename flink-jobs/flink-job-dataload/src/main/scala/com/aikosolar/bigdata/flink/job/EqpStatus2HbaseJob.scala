@@ -10,6 +10,7 @@ import com.aikosolar.bigdata.flink.job.conf.DataLoaderConf
 import com.alibaba.fastjson.JSON
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.flink.streaming.api.scala._
+import org.apache.log4j.Logger
 
 import scala.collection.JavaConversions._
 
@@ -49,6 +50,7 @@ import scala.collection.JavaConversions._
   * @author carlc
   */
 object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
+  val logger:Logger= Logger.getLogger(EqpStatus2HbaseJob.getClass)
   /**
     * 业务方法[不需自己调用env.execute()]
     */
@@ -94,8 +96,8 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
         }
         catch {
           case e: Exception => {
+            logger.info(result)
             result=null
-            println("message error")
           }
         }
         result
