@@ -11,7 +11,7 @@ class DataLoaderWithTopicsConf extends FLinkKafkaConfig {
   @Option(names = Array("--hbase.table"), required = false, description = Array("Hbase Table Name"))
   var tableName: String = _
 
-  @Option(names = Array("-tableMapping"), required = false, description = Array("topic与table映射"))
+  @Option(names = Array("-tm","--table.mapping"), required = false, description = Array("topic与table映射"))
   var tableMapping: Map[String, String] = new util.LinkedHashMap[String, String]()
 
 
