@@ -44,7 +44,7 @@ object DataLoaderJob extends FLinkKafkaRunner[DataLoaderConf] {
     val kafkaSource: DataStream[Map[String, AnyRef]] = rawKafkaSource
       .map(JSON.parseObject(_))
       .map(jsonObj => {
-        val result: Map[String, AnyRef] = new HashMap[String, AnyRef]()
+        var result: Map[String, AnyRef] = new HashMap[String, AnyRef]()
         for (en <- jsonObj.entrySet) {
           val key = c.fieldMapping.getOrDefault(en.getKey, en.getKey)
           val value = en.getValue
@@ -52,30 +52,42 @@ object DataLoaderJob extends FLinkKafkaRunner[DataLoaderConf] {
           // 统一转换为小写字符串,可以避免很多不必要的麻烦
           result.putIfAbsent(key.toLowerCase(), value)
         }
-        if (result.containsKey("eqpid") && result.containsKey("puttime")) {
-          val eqpId = result.get("eqpid").toString
-          val putTime = result.get("puttime").toString
+        try {
+          if (result.containsKey("eqpid") && result.containsKey("puttime")) {
 
-          val site = eqpId.substring(0, 2)
-          val factory = Sites.toFactoryId(site)
-          val rawString = eqpId + "|" + putTime
-          val rowKey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
-          val rawLongTime: Long = Dates.string2Long(putTime, Dates.fmt2)
-          val day_date: String = Dates.long2String(rawLongTime - 8 * 60 * 60 * 1000, Dates.fmt5)
+            val eqpId = result.get("eqpid").toString
+            val putTime = result.get("puttime").toString
 
-          result.putIfAbsent("row_key", rowKey)
-          result.putIfAbsent("site", site)
-          result.putIfAbsent("factory", factory)
-          result.putIfAbsent("day_date", day_date)
-          result.putIfAbsent("shift", Dates.toShift(putTime, Dates.fmt2, site))
-          result.putIfAbsent("long_time", (rawLongTime / 1000).toString)
+            val site = eqpId.substring(0, 2)
+            val factory = Sites.toFactoryId(site)
+            val rawString = eqpId + "|" + putTime
+            val rowKey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+            val rawLongTime: Long = Dates.string2Long(putTime, Dates.fmt2)
+            val day_date: String = Dates.long2String(rawLongTime - 8 * 60 * 60 * 1000, Dates.fmt5)
 
-          result
-        } else {
-          null
+            result.putIfAbsent("row_key", rowKey)
+            result.putIfAbsent("site", site)
+            result.putIfAbsent("factory", factory)
+            result.putIfAbsent("day_date", day_date)
+            result.putIfAbsent("shift", Dates.toShift(putTime, Dates.fmt2, site))
+            result.putIfAbsent("long_time", (rawLongTime / 1000).toString)
+            result.putIfAbsent("create_time", Dates.now(Dates.fmt2))
+          }
+          else {
+            result = null
+          }
+        }catch {
+          case e: Exception => {
+            result=null
+          }
         }
+        result
       })
       .filter(_ != null)
+
+    if(!"prod".equals(c.runMode)){
+      kafkaSource.print()
+    }
     kafkaSource.addSink(new SimpleHBaseTableSink(Builder.me().build(), c.tableName))
   }
 }

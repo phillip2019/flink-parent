@@ -56,7 +56,7 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
     val kafkaSource: DataStream[Map[String, AnyRef]] = rawKafkaSource
       .map(JSON.parseObject(_))
       .map(jsonObj => {
-        val result: Map[String, AnyRef] = new HashMap[String, AnyRef]()
+        var result: Map[String, AnyRef] = new HashMap[String, AnyRef]()
         for (en <- jsonObj.entrySet) {
           val key = c.fieldMapping.getOrDefault(en.getKey, en.getKey)
           val value = en.getValue
@@ -64,10 +64,11 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
           // 统一转换为小写字符串,可以避免很多不必要的麻烦
           result.putIfAbsent(key.toLowerCase(), value)
         }
-        if (result.containsKey("eqpid") && result.containsKey("newtime")
-          && result.containsKey("newstatus") && result.containsKey("oldstatus")
-          && result.containsKey("oldtime")) {
-          try{
+
+        try {
+          if (result.containsKey("eqpid") && result.containsKey("newtime")
+            && result.containsKey("newstatus") && result.containsKey("oldstatus")
+            && result.containsKey("oldtime")) {
             val eqpId = result.get("eqpid").toString
             val putTime = result.get("newtime").toString
 
@@ -85,18 +86,19 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
             result.putIfAbsent("shift", Dates.toShift(putTime, Dates.fmt2, site))
             result.putIfAbsent("long_time", (rawLongTime / 1000).toString)
             result.putIfAbsent("create_time", Dates.now(Dates.fmt2))
+
           }
-          catch {
-            case e: Exception => {
-              println("message error")
-            }
-          }finally {
-            null
-          }
-          result
-        } else {
-          null
+        else {
+          result=null
         }
+        }
+        catch {
+          case e: Exception => {
+            result=null
+            println("message error")
+          }
+        }
+        result
       })
       .filter(_ != null)
     if(!"prod".equals(c.runMode)){

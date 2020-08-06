@@ -19,6 +19,8 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.util.Collector
+import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
 
@@ -58,6 +60,7 @@ import scala.collection.JavaConversions._
   * @author carlc
   */
 object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
+  val logger:Logger= Logger.getLogger(EqpAlarm2HbaseJob.getClass)
   /**
     * 业务方法[不需自己调用env.execute()]
     */
@@ -73,10 +76,10 @@ object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
           // 统一转换为小写字符串,可以避免很多不必要的麻烦
           result.putIfAbsent(key.toLowerCase(), value)
         }
+        try {
+          if (result.containsKey("eqpid") && Strings.getNotnull(result.get("eqpid")).length > 2
+            && result.containsKey("puttime") && Strings.getNotnull(result.get("eqpid")).length >= 1) {
 
-        if (result.containsKey("eqpid") && Strings.getNotnull(result.get("eqpid")).length>2
-          && result.containsKey("puttime") && Strings.getNotnull(result.get("eqpid")).length>=1) {
-          try {
             val eqpId = result.get("eqpid").toString
             val putTime = result.get("puttime").toString
 
@@ -124,19 +127,17 @@ object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
             result.remove("tubeid4")
             result.remove("tubeid5")
           }
-            catch {
-              case e: Exception => {
-               println("message error")
-              }
-            }finally {
-              null
-            }
-
-          result
+          else {
+            result=null
           }
-      else {
-          null
+        } catch {
+          case e: Exception => {
+            logger.info(result)
+            result=null
+          }
         }
+
+        result
       })
       .filter(_ != null)
 
