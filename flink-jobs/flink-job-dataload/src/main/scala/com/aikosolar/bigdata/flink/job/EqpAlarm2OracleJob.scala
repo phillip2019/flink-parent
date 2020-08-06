@@ -79,7 +79,7 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
       .filter(r=>r.containsKey("alarmtext"))
       .filter(r=>r.containsKey("alarmcode"))
       .filter(r => Strings.isValidEqpId(r.get("eqpid")))
-      .filter(r=>StringUtils.contains(Strings.getNotnull(r.getOrDefault("alarmtext", "")),"cleared")==false )
+      .filter(r=> !StringUtils.contains(Strings.getNotnull(r.getOrDefault("alarmtext", "")),"cleared") )
       .map(m => {
         val eqpid = m.get("eqpid").toString
         val putTime = Strings.getNotnull(m.get("puttime"))
@@ -91,7 +91,7 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         }
         val alarmText = Strings.getNotnull(m.get("alarmtext"))
         val serorClear =null
-        val status = if(m.get("status")==null) null else m.get("status").toString
+        val status = m.get("status")
         val alarmId = Strings.getNotnull(m.get("alarmcode"))
 
          Action(eqpid, putTime, alarmId,status,alarmText, serorClear, "alarm", null, factory)
@@ -118,7 +118,7 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         stmt.setString(1, data.machineid)
         stmt.setString(2, data.occurtime)
         stmt.setString(3, data.alarmid)
-        stmt.setString(4, data.machinestatus)
+        stmt.setObject(4, data.machinestatus)
         stmt.setString(5, data.alarmtext)
         stmt.setString(6, data.serorclear)
         stmt.setString(7, data.messagetype)
@@ -130,7 +130,7 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
 
   }
 
-  case class Action(machineid: String, occurtime: String, alarmid: String, machinestatus: String, alarmtext: String, serorclear: String, messagetype: String, updatetime: String = null, factory: String)
+  case class Action(machineid: String, occurtime: String, alarmid: String, machinestatus: AnyRef, alarmtext: String, serorclear: String, messagetype: String, updatetime: String = null, factory: String)
 
 
 }

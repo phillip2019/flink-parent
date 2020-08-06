@@ -94,7 +94,7 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
         result
       }catch {
         case e: Exception => {
-          logger.info(result)
+          logger.error(result)
           null
         }
       }
