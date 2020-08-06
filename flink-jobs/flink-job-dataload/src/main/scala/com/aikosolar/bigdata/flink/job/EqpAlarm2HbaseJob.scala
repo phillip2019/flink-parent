@@ -1,26 +1,17 @@
 package com.aikosolar.bigdata.flink.job
 
-import java.sql.{PreparedStatement, Timestamp}
-import java.text.SimpleDateFormat
 import java.util.{HashMap, Map}
 
 import com.aikosolar.bigdata.flink.common.enums.Sites
 import com.aikosolar.bigdata.flink.common.utils.{Dates, Strings}
 import com.aikosolar.bigdata.flink.connectors.hbase.SimpleHBaseTableSink
 import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
-import com.aikosolar.bigdata.flink.connectors.jdbc.JdbcSink
-import com.aikosolar.bigdata.flink.connectors.jdbc.conf.JdbcConnectionOptions
-import com.aikosolar.bigdata.flink.connectors.jdbc.writter.JdbcWriter
-import com.aikosolar.bigdata.flink.job.conf.{AllEqpConfig, DataLoaderConf}
+import com.aikosolar.bigdata.flink.job.conf.DataLoaderConf
 import com.alibaba.fastjson.JSON
-import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang3.StringUtils
-import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.util.Collector
 import org.apache.log4j.Logger
-import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
 
@@ -50,17 +41,16 @@ import scala.collection.JavaConversions._
   * -ytm 2048 \
   * -ynm HalmFull \
   * --class com.aikosolar.bigdata.HalmFullJob  /root/halm/HalmHandle-1.1.0.jar \
- * --job-name=DFAlarmJob
- * --bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
- * --group.id=df-status-group
- * --reset.strategy=latest
- * --hbase.table=xxxx
- * --topic=data-collection-eqp-status
- *
-  * @author carlc
+  * --job-name=DFAlarmJob
+  * --bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
+  * --group.id=df-status-group
+  * --reset.strategy=latest
+  * --hbase.table=xxxx
+  * --topic=data-collection-eqp-alarm
   */
 object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
-  val logger:Logger= Logger.getLogger(EqpAlarm2HbaseJob.getClass)
+  val logger: Logger = Logger.getLogger(EqpAlarm2HbaseJob.getClass)
+
   /**
     * 业务方法[不需自己调用env.execute()]
     */
@@ -68,85 +58,74 @@ object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
     val kafkaSource: DataStream[Map[String, AnyRef]] = rawKafkaSource
       .map(JSON.parseObject(_))
       .map(jsonObj => {
-        var result: Map[String, AnyRef] = new HashMap[String, AnyRef]()
+        val result: Map[String, AnyRef] = new HashMap[String, AnyRef]()
         for (en <- jsonObj.entrySet) {
-          val key = c.fieldMapping.getOrDefault(en.getKey, en.getKey)
-          val value = en.getValue
-
-          // 统一转换为小写字符串,可以避免很多不必要的麻烦
-          result.putIfAbsent(key.toLowerCase(), value)
+          result.putIfAbsent(c.fieldMapping.getOrDefault(en.getKey, en.getKey).toLowerCase(), en.getValue)
         }
+        result
+      })
+      .filter(m => Strings.isValidEqpId(m.get("eqpid")))
+      .filter(m => {
+        val v = m.get("puttime")
+        v != null && StringUtils.isNotBlank(v.toString)
+      })
+      .map(result => {
+        val eqpId = result.get("eqpid").toString.trim
+        val putTime = result.get("puttime").toString.trim
         try {
-          if (result.containsKey("eqpid") && Strings.getNotnull(result.get("eqpid")).length > 2
-            && result.containsKey("puttime") && Strings.getNotnull(result.get("eqpid")).length >= 1) {
+          val site = eqpId.substring(0, 2)
+          val factory = Sites.toFactoryId(site)
+          val rawString = eqpId + "|" + putTime
+          val rowKey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+          val rawLongTime: Long = Dates.string2Long(putTime, Dates.fmt2)
+          val day_date: String = Dates.long2String(rawLongTime - 8 * 60 * 60 * 1000, Dates.fmt5)
+          val status = if (result.get("status") != null) result.get("status").toString else ""
 
-            val eqpId = result.get("eqpid").toString
-            val putTime = result.get("puttime").toString
+          result.putIfAbsent("row_key", rowKey)
+          result.putIfAbsent("site", site)
+          result.putIfAbsent("factory", factory)
+          result.putIfAbsent("day_date", day_date)
+          result.putIfAbsent("shift", Dates.toShift(putTime, Dates.fmt2, site))
+          result.putIfAbsent("long_time", (rawLongTime / 1000).toString)
+          result.putIfAbsent("create_time", Dates.now(Dates.fmt2))
 
-            val site = eqpId.substring(0, 2)
-            val factory = Sites.toFactoryId(site)
-            val rawString = eqpId + "|" + putTime
-            val rowKey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
-            val rawLongTime: Long = Dates.string2Long(putTime, Dates.fmt2)
-            val day_date: String = Dates.long2String(rawLongTime - 8 * 60 * 60 * 1000, Dates.fmt5)
-
-            result.putIfAbsent("row_key", rowKey)
-            result.putIfAbsent("site", site)
-            result.putIfAbsent("factory", factory)
-            result.putIfAbsent("day_date", day_date)
-            result.putIfAbsent("shift", Dates.toShift(putTime, Dates.fmt2, site))
-            result.putIfAbsent("long_time", (rawLongTime / 1000).toString)
-            result.putIfAbsent("create_time", Dates.now(Dates.fmt2))
-
-
-            var tubeid = ""
+          var tubeId = ""
+          if (StringUtils.isNotBlank(status.toString.trim)) {
             val eqp = eqpId.substring(3)
-            val status = result.getOrDefault("status", "")
-            if (!"".equals(status) && status != null) {
-              if (eqp.toUpperCase().startsWith("DF") || eqp.toUpperCase().startsWith("PE") || eqp.toUpperCase().startsWith("PR")) {
-                val tubeid1 = Strings.getNotnull(result.getOrDefault("tubeid1", ""))
-                val tubeid2 = Strings.getNotnull(result.getOrDefault("tubeid2", ""))
-                val tubeid3 = Strings.getNotnull(result.getOrDefault("tubeid3", ""))
-                val tubeid4 = Strings.getNotnull(result.getOrDefault("tubeid4", ""))
-                val tubeid5 = Strings.getNotnull(result.getOrDefault("tubeid5", ""))
-
-                tubeid = status match {
-                  case status if (status.toString.trim.equals(tubeid1)) => "TubeID1"
-                  case status if (status.toString.trim.equals(tubeid2)) => "TubeID2"
-                  case status if (status.toString.trim.equals(tubeid3)) => "TubeID3"
-                  case status if (status.toString.trim.equals(tubeid4)) => "TubeID4"
-                  case status if (status.toString.trim.equals(tubeid5)) => "TubeID5"
-                  case _ => ""
+            if (eqp.toUpperCase().startsWith("DF") || eqp.toUpperCase().startsWith("PE") || eqp.toUpperCase().startsWith("PR")) {
+              for (x <- 1 to 5 if (!"".equals(tubeId))) {
+                val key = s"TubeID$x"
+                val value = Strings.getNotnull(result.getOrDefault(key.toLowerCase(), ""))
+                if (status.equals(value)) {
+                  tubeId = key
                 }
               }
             }
-            result.putIfAbsent("tubeid", tubeid)
-            result.remove("tubeid1")
-            result.remove("tubeid2")
-            result.remove("tubeid3")
-            result.remove("tubeid4")
-            result.remove("tubeid5")
           }
-          else {
-            result=null
-          }
+
+          result.putIfAbsent("tubeid", tubeId)
+
+          result.remove("tubeid1")
+          result.remove("tubeid2")
+          result.remove("tubeid3")
+          result.remove("tubeid4")
+          result.remove("tubeid5")
+          result
         } catch {
           case e: Exception => {
-            logger.info(result)
-            result=null
+            logger.error(result)
+            null
           }
         }
-
-        result
       })
       .filter(_ != null)
 
-    if(!"prod".equals(c.runMode)){
+    if (!"prod".equals(c.runMode)) {
       kafkaSource.print()
     }
+
     kafkaSource.addSink(new SimpleHBaseTableSink(Builder.me().build(), c.tableName))
   }
-
 
 }
 
