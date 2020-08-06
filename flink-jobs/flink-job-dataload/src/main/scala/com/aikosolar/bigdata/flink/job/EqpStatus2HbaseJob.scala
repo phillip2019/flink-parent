@@ -9,6 +9,7 @@ import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Bu
 import com.aikosolar.bigdata.flink.job.conf.DataLoaderConf
 import com.alibaba.fastjson.JSON
 import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.flink.streaming.api.scala._
 import org.apache.log4j.Logger
 
@@ -65,7 +66,13 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
           result.putIfAbsent(key.toLowerCase(), value)
         }
         result
-      }).map(result=>{
+      })
+      .filter(r => Strings.isValidEqpId(r.get("eqpid")))
+      .filter(r => {
+        val v = r.get("newtime")
+        v != null && StringUtils.isNotBlank(v.toString)
+      })
+      .map(result=>{
       try{
         val eqpId = result.get("eqpid").toString
         val putTime = result.get("newtime").toString
@@ -84,12 +91,10 @@ object EqpStatus2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
         result.putIfAbsent("shift", Dates.toShift(putTime, Dates.fmt2, site))
         result.putIfAbsent("long_time", (rawLongTime / 1000).toString)
         result.putIfAbsent("create_time", Dates.now(Dates.fmt2))
-
         result
-
       }catch {
         case e: Exception => {
-          logger.error(result)
+          logger.info(result)
           null
         }
       }

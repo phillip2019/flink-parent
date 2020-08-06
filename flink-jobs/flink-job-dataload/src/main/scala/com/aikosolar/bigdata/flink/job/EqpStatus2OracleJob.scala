@@ -51,7 +51,6 @@ import scala.collection.JavaConversions._
  * --hbase.table=xxxx
  * --topic=data-collection-eqp-status
  *
-  * @author carlc
   */
 object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
   /**
@@ -72,12 +71,11 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         }
         result
       })
-      .filter(r=>r.containsKey("eqpid"))
       .filter(r=>r.containsKey("newstatus"))
       .filter(r=>r.containsKey("oldstatus"))
       .filter(r=>r.containsKey("newtime"))
       .filter(r=>r.containsKey("oldtime"))
-      .filter(r => StringUtils.isNotBlank(r.getOrDefault("eqpid", "").toString))
+      .filter(r => Strings.isValidEqpId(r.get("eqpid")))
       .map(m => {
         val eqpid = m.get("eqpid").toString
         val newstatus = Strings.getNotnull(m.getOrDefault("newstatus", ""))
@@ -138,25 +136,11 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
     }))
 
 
-    val checkSql="select count(1) from APIPRO.EAS_EQUIPMENT_STATUS_UPDATE_K where NAME=?"
+
     val updateSql="update APIPRO.EAS_EQUIPMENT_STATUS_UPDATE_K set STATUSCODENAME=?,LASTSTATUSDATE=?,PRDTIMEFLAG=? where NAME=?"
     val insertSql = "INSERT INTO APIPRO.EAS_EQUIPMENT_STATUS_UPDATE_K (NAME,STATUSCODENAME,LASTSTATUSDATE,PRDTIMEFLAG) VALUES (?,?,?,?)"
 
-    updateStream.addSink(new JdbcMergeSink[Update](conf, checkSql, updateSql, insertSql, new JdbcWriter[Update] {
-      override def exists(stmt: PreparedStatement, data: Update): Boolean = {
-
-        stmt.setString(1, data.name)
-        var result: Boolean = true
-        try {
-          val rs = stmt.executeQuery()
-          result = if (rs.next()) rs.getInt(1) > 0 else false
-        } catch {
-          case e: Exception =>
-            throw e
-        }
-        result
-      }
-
+    updateStream.addSink(new JdbcMergeSink[Update](conf,  updateSql, insertSql, new JdbcWriter[Update] {
       override def  update(stmt: PreparedStatement, data: Update){
         val formatter: SimpleDateFormat =  if(data.laststatusdate.contains("-")) new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
         else if(data.laststatusdate.contains("/")) new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
@@ -178,6 +162,12 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         stmt.setString(4, "false")
       }
     }))
+
+
+    if(!"prod".equals(c.runMode)){
+      histStream.print("histStream")
+      updateStream.print("updateStream")
+    }
 
   }
 

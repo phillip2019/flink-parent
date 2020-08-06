@@ -3,6 +3,7 @@ package com.aikosolar.bigdata.flink.job
 import java.sql.PreparedStatement
 import java.util.{HashMap, Map}
 
+import com.aikosolar.bigdata.flink.common.utils.Strings
 import com.aikosolar.bigdata.flink.connectors.jdbc.JdbcSink
 import com.aikosolar.bigdata.flink.connectors.jdbc.conf.JdbcConnectionOptions
 import com.aikosolar.bigdata.flink.connectors.jdbc.writter.JdbcWriter
@@ -53,7 +54,6 @@ import scala.collection.JavaConversions._
   * --hbase.table=ods:ods_f_eqp_all_alarm
   * --topic=data-collection-eqp-alarm
   *
-  * @author carlc
   */
 object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
   /**
@@ -78,22 +78,21 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
       .filter(r=>r.containsKey("status"))
       .filter(r=>r.containsKey("alarmtext"))
       .filter(r=>r.containsKey("alarmcode"))
-      .filter(r => StringUtils.isNotBlank(r.getOrDefault("eqpid", "").toString))
-      .filter(r => StringUtils.isNotBlank(r.getOrDefault("puttime", "").toString))
-      .filter(r=>StringUtils.contains(r.getOrDefault("puttime", "").toString,"cleared")==false )
+      .filter(r => Strings.isValidEqpId(r.get("eqpid")))
+      .filter(r=>StringUtils.contains(Strings.getNotnull(r.getOrDefault("alarmtext", "")),"cleared")==false )
       .map(m => {
         val eqpid = m.get("eqpid").toString
-        val putTime = m.get("puttime").toString
+        val putTime = Strings.getNotnull(m.get("puttime"))
         val factory = eqpid.substring(0, 1) match {
           case "G" => "1000"
           case "Z" => "2000"
           case "T" => "3000"
           case _ => "Other"
         }
-        val alarmText = m.getOrDefault("alarmtext", "").toString
+        val alarmText = Strings.getNotnull(m.get("alarmtext"))
         val serorClear =null
-        val status = if(m.getOrDefault("status", null)==null) null else m.getOrDefault("status", null).toString
-        val alarmId = m.getOrDefault("alarmcode", "").toString
+        val status = if(m.get("status")==null) null else m.get("status").toString
+        val alarmId = Strings.getNotnull(m.get("alarmcode"))
 
          Action(eqpid, putTime, alarmId,status,alarmText, serorClear, "alarm", null, factory)
       })
