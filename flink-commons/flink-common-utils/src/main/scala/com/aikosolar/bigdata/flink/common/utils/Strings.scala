@@ -6,7 +6,7 @@ import java.util.regex.Pattern
   * @author carlc
   */
 object Strings {
-  val EQPID_REGEX: Pattern = Pattern.compile("[A-Z]\\d-[A-Z]+\\d{1,2}")
+  val EQPID_REGEX: Pattern = Pattern.compile("^[A-Z]\\d-[A-Z]+\\d{1,2}$")
 
   /**
     * 驼峰转下滑
@@ -40,10 +40,11 @@ object Strings {
   }
 
   def main(args: Array[String]): Unit = {
-    println(isValidEqpId("Z2-DFH05"))
-    println(isValidEqpId("2000-BHFU03"))
-    println(isValidEqpId(" Z2-HFU06"))
-    println(isValidEqpId("Z2-05"))
-    println(isValidEqpId("Z205"))
+    println(isValidEqpId("Z2-DFH05")) // true
+    println(isValidEqpId("1Z2-DFH05")) // false
+    println(isValidEqpId("2000-BHFU03")) //false
+    println(isValidEqpId(" Z2-HFU06")) // true
+    println(isValidEqpId("Z2-05")) //false
+    println(isValidEqpId("Z205")) //false
   }
 }
