@@ -14,7 +14,7 @@ import org.apache.flink.types.Row
   *
   * @author carlc
   */
-object FLinkSqlDemo {
+object EqpStateAlarmProcessBySqlDemo {
 
   def main(args: Array[String]): Unit = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment

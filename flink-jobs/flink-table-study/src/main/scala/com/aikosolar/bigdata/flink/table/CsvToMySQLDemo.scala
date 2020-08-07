@@ -8,11 +8,11 @@ import org.apache.flink.table.descriptors.{FileSystem, OldCsv, Schema}
 import org.apache.flink.types.Row
 
 /**
-  * FLink Table/SQL API 学习
+  * 读取csv文件并写入mysql
   *
   * @author carlc
   */
-object FLinkTableCsv {
+object CsvToMySQLDemo {
 
   def main(args: Array[String]): Unit = {
     // >>>>>>> 套路 >>>>>>>
