@@ -52,7 +52,7 @@ object CsvToMySQLDemo {
   }
 
   /**
-    * 使用Table API创建csv_bt表
+    * Table API方式创建csv_bt表
     */
   def useApi2CreateCsvBT(tEnv:StreamTableEnvironment): Unit ={
     // table api 方式(注意:1.9 版本和 1.11 版本Api的差异，部分api后续将被废弃)
@@ -79,7 +79,7 @@ object CsvToMySQLDemo {
   }
 
   /**
-    * 使用DDL创建csv_bt表
+    * DDL方式创建csv_bt表
     */
   def useDDL2CreateCsvBT(tEnv:StreamTableEnvironment): Unit = {
     // 1.9 版本的csv写起来感觉很恶心
@@ -118,7 +118,7 @@ object CsvToMySQLDemo {
 
 
   /**
-    * 使用DDL创建mysql_bt表
+    * DDL方式创建mysql_bt表
     */
   def useDDL2CreateMySQLBT(tEnv:StreamTableEnvironment): Unit = {
 
@@ -134,7 +134,7 @@ object CsvToMySQLDemo {
         |)
         |WITH (
         | 'connector.type' = 'jdbc',
-        | 'connector.url' = 'jdbc:mysql://mysql:3306/maple', -- required: JDBC DB url
+        | 'connector.url' = 'jdbc:mysql://mysql:3306/maple',
         | 'connector.table' = 't_bt',
         | 'connector.driver' = 'com.mysql.jdbc.Driver',
         | 'connector.username' = 'root',
