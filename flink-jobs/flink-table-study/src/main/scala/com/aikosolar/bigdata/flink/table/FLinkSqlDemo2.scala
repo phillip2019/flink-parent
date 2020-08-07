@@ -50,7 +50,7 @@ object FLinkSqlDemo2 {
     // DataStream - > Table
     val kafkaTable: Table = tEnv.fromDataStream(kafkaSource)
     // 注册视图,后续计算用
-    tEnv.createTemporaryView("eqp_alarm", kafkaTable)
+    tEnv.registerTable("eqp_alarm", kafkaTable) // todo 这一步API会和后续版本不一致
     val query =
       """
         |SELECT eqpid,puttime,status,tubeid1,tubeid2,tubeid3,tubeid4,tubeid5   -- 简化字段
