@@ -22,6 +22,16 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.aikosolar.bigdata</groupId>
+            <artifactId>flink-common-utils</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.72</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-table-planner_${scala.binary.version}</artifactId>
             <version>${flink.version}</version>
