@@ -1,4 +1,3 @@
-EqpID,ModuleName,E10State,StatusCode,ProcessStatus,PutTime
 "Z2-BT02","HWD","PRD",0,"ProcessEnd","2020-08-06 01:32:59"
 "Z2-BT02","WAD 1","PRD",1,"ProcessStart","2020-08-06 01:33:07"
 "Z2-BT02","PCS 1","PRD",1,"ProcessStart","2020-08-06 01:33:16"
