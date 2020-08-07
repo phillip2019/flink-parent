@@ -45,7 +45,7 @@ object FLinkSqlDemo {
         |    'connector.type' = 'kafka',
         |    'connector.version' = '0.10',
         |    'connector.topic' = 'eqp_ct_state_alarm',
-        |    'connector.startup-mode' = 'earliest-offset',
+        |    'connector.startup-mode' = 'latest-offset',
         |    'connector.properties.0.key' = 'zookeeper.connect',
         |    'connector.properties.0.value' = '172.16.111.20:2181,172.16.111.21:2181,172.16.111.22:2181',
         |    'connector.properties.1.key' = 'bootstrap.servers',
