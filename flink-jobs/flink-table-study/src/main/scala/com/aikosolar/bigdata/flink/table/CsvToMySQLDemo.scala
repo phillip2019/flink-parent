@@ -1,5 +1,7 @@
 package com.aikosolar.bigdata.flink.table
 
+import java.io.File
+
 import org.apache.flink.api.scala.typeutils.Types
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.table.api.EnvironmentSettings
@@ -56,7 +58,7 @@ object CsvToMySQLDemo {
     */
   def useApi2CreateCsvBT(tEnv:StreamTableEnvironment): Unit ={
     // table api 方式(注意:1.9 版本和 1.11 版本Api的差异，部分api后续将被废弃)
-    tEnv.connect(new FileSystem().path("/home/carlc/工作/aikosolar-flink-parent/flink-jobs/flink-table-study/src/main/resources/bt.csv"))
+    tEnv.connect(new FileSystem().path(new File(CsvToMySQLDemo.getClass.getClassLoader.getResource("bt.csv").getFile).getAbsolutePath))
       .withFormat(new OldCsv()
 //        .ignoreFirstLine()              // api版本支持过滤第一个条数据，但在ddl里面好像又不能，所以我把原数据中第一行删除了
         .field("EqpID",Types.STRING)
