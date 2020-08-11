@@ -79,7 +79,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
                          )
 
   /** 维表数据结构 */
-  case class DimSt(eqpId: String, tubeId: String, st: Long, setSt: Long)
+  case class EveStSetting(eqpId: String, tubeId: String, st: Long, setSt: Long)
 
   class EveFunction extends KeyedProcessFunction[(String, String), Subscription, Subscription] {
     lazy val previousSubscription = getRuntimeContext.getState(new ValueStateDescriptor[Subscription]("previous", classOf[Subscription]))
@@ -105,7 +105,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
     lazy val logger = LoggerFactory.getLogger(classOf[JoinMap])
 
     val executor: ScheduledExecutorService = null
-    var cache: Map[(String, String), DimSt] = new HashMap[(String, String), DimSt]()
+    var cache: Map[(String, String), EveStSetting] = new HashMap[(String, String), EveStSetting]()
 
     var loadFlag: AtomicBoolean = _
 
@@ -115,7 +115,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
         override def run(): Unit = {
           try {
             loadFlag.compareAndSet(false, true) {
-              val temp: Map[(String, String), DimSt] = load
+              val temp: Map[(String, String), EveStSetting] = load
               logger.info("加载维表数据成功,缓存大小:" + temp.size())
               if (MapUtils.isNotEmpty(temp)) {
                 cache = temp
@@ -146,10 +146,10 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       value
     }
 
-    def load(): Map[(String, String), DimSt] = {
+    def load(): Map[(String, String), EveStSetting] = {
       import java.sql.DriverManager
 
-      val temp: Map[(String, String), DimSt] = new HashMap[(String, String), DimSt]()
+      val temp: Map[(String, String), EveStSetting] = new HashMap[(String, String), EveStSetting]()
       var connection: Connection = null
       var statement: PreparedStatement = null
       var rs: ResultSet = null
@@ -164,7 +164,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
           val tubeId = rs.getString("tubeId")
           val st = rs.getLong("st")
           val setst = rs.getLong("setst")
-          temp.put((eqpId, tubeId), new DimSt(eqpId, tubeId, st, setst))
+          temp.put((eqpId, tubeId), new EveStSetting(eqpId, tubeId, st, setst))
         }
       }
       finally {
