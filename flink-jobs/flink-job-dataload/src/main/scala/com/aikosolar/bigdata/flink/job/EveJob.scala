@@ -15,7 +15,9 @@ import org.apache.flink.api.common.functions.RichMapFunction
 import org.apache.flink.api.common.state.ValueStateDescriptor
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction
+import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor
 import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.util.Collector
 import org.slf4j.LoggerFactory
 
@@ -32,9 +34,6 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
     * 业务方法[不需自己调用env.execute()]
     */
   override def run0(env: StreamExecutionEnvironment, c: EveConfig, rawKafkaSource: DataStream[(String, String)]): Unit = {
-    // todo watermark
-    rawKafkaSource.map(_._2).print("原始")
-
     val dateStream: DataStream[Subscription] = rawKafkaSource
       .map(x => (c.topicMapping.getOrDefault(x._1, null), JSON.parseObject(x._2, classOf[Subscription])))
       .filter(_._1 != null)
@@ -48,6 +47,9 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
         data
       })
       .filter(_.tag != null)
+      .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[Subscription](Time.minutes(5)) {
+        override def extractTimestamp(v: Subscription): Long = Dates.string2Long(v.putTime, Dates.fmt2)
+      })
       .keyBy(x => (x.eqpId, x.tubeId))
       .process(new EveFunction())
       .map(new JoinMap)
@@ -145,7 +147,6 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
     }
 
     def load(): Map[(String, String), DimSt] = {
-      // todo 从mysql中加载
       import java.sql.DriverManager
 
       val temp: Map[(String, String), DimSt] = new HashMap[(String, String), DimSt]()
