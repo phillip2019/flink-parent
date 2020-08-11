@@ -114,7 +114,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       executor.scheduleAtFixedRate(new Runnable() {
         override def run(): Unit = {
           try {
-            loadFlag.compareAndSet(false, true) {
+            if (loadFlag.compareAndSet(false, true)) {
               val temp: Map[(String, String), EveStSetting] = load
               logger.info("加载维表数据成功,缓存大小:" + temp.size())
               if (MapUtils.isNotEmpty(temp)) {
