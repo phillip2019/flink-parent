@@ -126,7 +126,6 @@ object DFLogPreHandlerJob extends FLinkKafkaRunner[DFLogPreHandleConfig] {
           if (timerState.value == 0L) {
             val ts = ctx.timestamp() + 2 * 60 * 1000
             ctx.timerService.registerEventTimeTimer(ts)
-            L.info("start中注册:{}", ts)
             timerState.update(ts)
           }
           return
@@ -147,7 +146,6 @@ object DFLogPreHandlerJob extends FLinkKafkaRunner[DFLogPreHandleConfig] {
           if (timerState.value == 0L) {
             val ts = ctx.timestamp() - 2 * 60 * 1000
             ctx.timerService.registerEventTimeTimer(ts)
-            L.info("end中注册:{}", ts)
             timerState.update(ts)
           }
           return
