@@ -2,7 +2,7 @@ package com.aikosolar.bigdata.flink.job
 
 import java.sql.{Connection, PreparedStatement, ResultSet}
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.{ScheduledExecutorService, TimeUnit}
+import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 import java.util.{HashMap, Map}
 
 import com.aikosolar.bigdata.flink.common.enums.Sites
@@ -20,9 +20,7 @@ import org.apache.flink.api.common.functions.RichMapFunction
 import org.apache.flink.api.common.state.ValueStateDescriptor
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction
-import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.util.Collector
 import org.apache.hadoop.hbase.client.{Delete, Put}
 import org.apache.hadoop.hbase.util.Bytes
@@ -42,29 +40,31 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
     */
   override def run0(env: StreamExecutionEnvironment, c: EveConfig, rawKafkaSource: DataStream[(String, String)]): Unit = {
     val dateStream: DataStream[Subscription] = rawKafkaSource
-      .map(x => (c.topicMapping.getOrDefault(x._1, null), JSON.parseObject(x._2, classOf[Subscription])))
+      .map(x => {
+        (c.topicMapping.getOrDefault(x._1, null), JSON.parseObject(x._2, classOf[Subscription]))
+      })
       .filter(_._1 != null)
       .filter(x => StringUtils.isNotBlank(x._2.tubeId) && Strings.isValidEqpId(x._2.eqpId) && StringUtils.isNoneBlank(x._2.putTime))
       .map(x => {
         val data: Subscription = x._2
+        data.eqp_type = data.eqpId.split("-")(1).replaceAll("\\d+", "")
         val tagService = EveTagServiceFactory.getEveTagService(x._1)
         if (tagService != null) {
-          data.tag = tagService.tag(data.text1)
+          // 兼容TA的取值方式
+          data.tag = if ("ta".equalsIgnoreCase(data.eqp_type)) tagService.tag(data.CurrStep) else tagService.tag(data.text1)
+          val rawString = data.eqpId + "|" + data.putTime
+          data.site = data.eqpId.substring(0, 2)
+          data.factory = Sites.toFactoryId(data.site)
+          data.rowkey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+          data.day_date = Dates.long2String(Dates.string2Long(data.putTime, Dates.fmt2) - 8 * 60 * 60 * 1000, Dates.fmt5)
         }
-
-        val rawString = data.eqpId + "|" + data.putTime
-        val rawLongTime: Long = Dates.string2Long(data.putTime, Dates.fmt2)
-        data.site = data.eqpId.substring(0, 2)
-        data.factory = Sites.toFactoryId(data.site)
-        data.rowkey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
-        data.day_date = Dates.long2String(rawLongTime - 8 * 60 * 60 * 1000, Dates.fmt5)
-        data.eqp_type = data.eqpId.split("-")(1).replaceAll("\\d+", "")
         data
       })
       .filter(_.tag != null)
-      .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[Subscription](Time.minutes(5)) {
-        override def extractTimestamp(v: Subscription): Long = Dates.string2Long(v.putTime, Dates.fmt2)
-      })
+      //      可以用processTime,没必要分配水位
+      //      .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[Subscription](Time.minutes(5)) {
+      //        override def extractTimestamp(v: Subscription): Long = Dates.string2Long(v.putTime, Dates.fmt2)
+      //      })
       .keyBy(x => (x.eqpId, x.tubeId))
       .process(new EveFunction())
       .map(new JoinMap)
@@ -113,6 +113,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
   case class Subscription(eqpId: String, tubeId: String, states: String,
                           text1: String, putTime: String,
                           runCount: String,
+                          CurrStep: String,
                           var output_qty: String = "1",
                           var tag: EveStep = null,
                           var dataType: String = null,
@@ -163,13 +164,15 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
   class JoinMap extends RichMapFunction[Subscription, Subscription] {
     lazy val logger = LoggerFactory.getLogger(classOf[JoinMap])
 
-    val executor: ScheduledExecutorService = null
+    var executor: ScheduledExecutorService = null
     var cache: Map[(String, String), EveStSetting] = new HashMap[(String, String), EveStSetting]()
 
     var loadFlag: AtomicBoolean = _
 
     override def open(parameters: Configuration): Unit = {
       super.open(parameters)
+      loadFlag = new AtomicBoolean(false)
+      executor = Executors.newScheduledThreadPool(1)
       executor.scheduleAtFixedRate(new Runnable() {
         override def run(): Unit = {
           try {
