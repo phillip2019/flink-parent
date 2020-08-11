@@ -13,22 +13,22 @@ public class DFEveTagService implements EveTagService {
         if (StringUtils.isBlank(text)) {
             return null;
         }
-        if ("Recipe started".equalsIgnoreCase(text.trim())) {
+        if ("recipe end".equalsIgnoreCase(text.trim())) {
             return EveStep.LOAD;
         }
-        if ("Memory Text1 Increase pressure for temp. stabilization".equalsIgnoreCase(text.trim())) {
+        if ("pump down".equalsIgnoreCase(text.trim())) {
             return EveStep.CONDITION;
         }
-        if ("Switch to local scrubber exhaust.".equalsIgnoreCase(text.trim())) {
+        if ("Check Bubbler back to atmo pressure".equalsIgnoreCase(text.trim())) {
             return EveStep.PROCESS;
         }
-        if ("Memory Text1 Evacuate Tube and MFCs".equalsIgnoreCase(text.trim())) {
+        if ("Set tube pressure".equalsIgnoreCase(text.trim())) {
             return EveStep.CLEAN;
         }
-        if ("Memory Text1 Fill tube with N2".equalsIgnoreCase(text.trim())) {
+        if ("Loading completed".equalsIgnoreCase(text.trim())) {
             return EveStep.UNLOAD;
         }
-        if ("Recipe End Recipe:".equalsIgnoreCase(text.trim())) {
+        if ("process started".equalsIgnoreCase(text.trim())) {
             return EveStep.CHANGE;
         }
         return null;

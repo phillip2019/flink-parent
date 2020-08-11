@@ -14,25 +14,7 @@ public class TAEveTagService implements EveTagService {
         if (StringUtils.isBlank(text)) {
             return null;
         }
-        if ("Recipe started".equalsIgnoreCase(text.trim())) {
-            return EveStep.LOAD;
-        }
-        if ("Memory Text1 Increase pressure for temp. stabilization".equalsIgnoreCase(text.trim())) {
-            return EveStep.CONDITION;
-        }
-        if ("Switch to local scrubber exhaust.".equalsIgnoreCase(text.trim())) {
-            return EveStep.PROCESS;
-        }
-        if ("Memory Text1 Evacuate Tube and MFCs".equalsIgnoreCase(text.trim())) {
-            return EveStep.CLEAN;
-        }
-        if ("Memory Text1 Fill tube with N2".equalsIgnoreCase(text.trim())) {
-            return EveStep.UNLOAD;
-        }
-        if ("Recipe End Recipe:".equalsIgnoreCase(text.trim())) {
-            return EveStep.CHANGE;
-        }
-        return null;
+        throw new UnsupportedOperationException("不支持");
     }
 
     private TAEveTagService() {

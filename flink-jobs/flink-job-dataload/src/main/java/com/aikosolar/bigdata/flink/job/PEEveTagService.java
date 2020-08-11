@@ -17,16 +17,16 @@ public class PEEveTagService implements EveTagService {
         if ("Recipe started".equalsIgnoreCase(text.trim())) {
             return EveStep.LOAD;
         }
-        if ("Memory Text1 Increase pressure for temp. stabilization".equalsIgnoreCase(text.trim())) {
+        if ("Input: Define manually rework: <N/Y> N Recipe: /PROCESS/V1PDV101;6".equalsIgnoreCase(text.trim())) {
             return EveStep.CONDITION;
         }
-        if ("Switch to local scrubber exhaust.".equalsIgnoreCase(text.trim())) {
+        if ("Memory Text1 deposition".equalsIgnoreCase(text.trim())) {
             return EveStep.PROCESS;
         }
-        if ("Memory Text1 Evacuate Tube and MFCs".equalsIgnoreCase(text.trim())) {
+        if ("Memory Text2 Evacuate tube and pressure test".equalsIgnoreCase(text.trim())) {
             return EveStep.CLEAN;
         }
-        if ("Memory Text1 Fill tube with N2".equalsIgnoreCase(text.trim())) {
+        if ("Memory Text1 unload".equalsIgnoreCase(text.trim())) {
             return EveStep.UNLOAD;
         }
         if ("Recipe End Recipe:".equalsIgnoreCase(text.trim())) {
