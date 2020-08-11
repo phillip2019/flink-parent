@@ -7,6 +7,9 @@ import java.util.{HashMap, Map}
 
 import com.aikosolar.bigdata.flink.common.enums.Sites
 import com.aikosolar.bigdata.flink.common.utils.{Dates, IOUtils, Strings}
+import com.aikosolar.bigdata.flink.connectors.hbase.mapper.HBaseMutationConverter
+import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
+import com.aikosolar.bigdata.flink.connectors.hbase.{HBaseOperation, HBaseSink}
 import com.aikosolar.bigdata.flink.job.conf.EveConfig
 import com.aikosolar.bigdata.flink.job.enums.EveStep
 import com.alibaba.fastjson.JSON
@@ -21,6 +24,8 @@ import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrderness
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.util.Collector
+import org.apache.hadoop.hbase.client.{Delete, Put}
+import org.apache.hadoop.hbase.util.Bytes
 import org.slf4j.LoggerFactory
 
 
@@ -63,7 +68,46 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       .keyBy(x => (x.eqpId, x.tubeId))
       .process(new EveFunction())
       .map(new JoinMap)
-    dateStream.print("处理结果")
+
+    dateStream.addSink(new HBaseSink[Subscription](Builder.me().build(), c.tableName, new HBaseMutationConverter[Subscription] {
+      override def insert(data: Subscription): Put = {
+        val put: Put = new Put(Bytes.toBytes(data.rowkey))
+        addColumn(put, "factory", data.factory)
+        addColumn(put, "site", data.site)
+        addColumn(put, "eqp_id", data.eqpId)
+        addColumn(put, "eqp_type", data.eqp_type)
+        addColumn(put, "day_date", data.day_date)
+        addColumn(put, "shift", data.shift)
+        addColumn(put, "test_time", data.putTime)
+        addColumn(put, "end_time", data.endTime)
+        addColumn(put, "tube_id", data.tubeId)
+        addColumn(put, "odl_step_name", data.tag.toString)
+        addColumn(put, "step_name", data.step_name.toString)
+        addColumn(put, "data_type", data.dataType)
+        addColumn(put, "output_qty", data.output_qty)
+        addColumn(put, "ct", data.ct)
+        addColumn(put, "st", data.st)
+        addColumn(put, "loss", data.loss)
+        addColumn(put, "sertue", data.sertue)
+        addColumn(put, "set_st", data.set_st)
+        addColumn(put, "set_st_loss", data.set_st_loss)
+        addColumn(put, "set_st_sertue", data.set_st_sertue)
+        addColumn(put, "createTime", data.createTime)
+        addColumn(put, "run_count", data.runCount)
+        addColumn(put, "states", data.states)
+        put
+      }
+
+      override def delete(record: Subscription): Delete = {
+        null
+      }
+    }, HBaseOperation.INSERT))
+  }
+
+  def addColumn(put: Put, key: String, value: Any): Unit = {
+    if (value != null) {
+      put.addColumn(Bytes.toBytes("cf"), Bytes.toBytes("factory"), Bytes.toBytes(value.toString))
+    }
   }
 
   case class Subscription(eqpId: String, tubeId: String, states: String,
@@ -75,7 +119,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
                           var endTime: String = null,
                           var createTime: String = null,
                           var ct: Long = 0L,
-
+                          var step_name: EveStep = null,
                           var st: Long = 0L,
                           var loss: Long = 0L,
                           var sertue: String = null,
@@ -104,6 +148,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       if (previous != null) {
         previous.dataType = if (previous.tag.next() == value.tag) "Y" else "N"
         previous.endTime = previous.putTime
+        previous.step_name = value.tag
         previous.ct = Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2)
         previous.createTime = Dates.now(Dates.fmt2)
         out.collect(previous)
@@ -178,8 +223,8 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
           val eqpId = rs.getString("eqpId")
           val tubeId = rs.getString("tubeId")
           val st = rs.getLong("st")
-          val setst = rs.getLong("setst")
-          temp.put((eqpId, tubeId), new EveStSetting(eqpId, tubeId, st, setst))
+          val set_st = rs.getLong("setst")
+          temp.put((eqpId, tubeId), new EveStSetting(eqpId, tubeId, st, set_st))
         }
       }
       finally {
