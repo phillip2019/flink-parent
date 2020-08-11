@@ -5,10 +5,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{ScheduledExecutorService, TimeUnit}
 import java.util.{HashMap, Map}
 
+import com.aikosolar.bigdata.flink.common.enums.Sites
 import com.aikosolar.bigdata.flink.common.utils.{Dates, IOUtils, Strings}
 import com.aikosolar.bigdata.flink.job.conf.EveConfig
 import com.aikosolar.bigdata.flink.job.enums.EveStep
 import com.alibaba.fastjson.JSON
+import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.api.common.functions.RichMapFunction
@@ -37,13 +39,21 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
     val dateStream: DataStream[Subscription] = rawKafkaSource
       .map(x => (c.topicMapping.getOrDefault(x._1, null), JSON.parseObject(x._2, classOf[Subscription])))
       .filter(_._1 != null)
-      .filter(x => StringUtils.isNotBlank(x._2.tubeId) && Strings.isValidEqpId(x._2.eqpId))
+      .filter(x => StringUtils.isNotBlank(x._2.tubeId) && Strings.isValidEqpId(x._2.eqpId) && StringUtils.isNoneBlank(x._2.putTime))
       .map(x => {
         val data: Subscription = x._2
         val tagService = EveTagServiceFactory.getEveTagService(x._1)
         if (tagService != null) {
           data.tag = tagService.tag(data.text1)
         }
+
+        val rawString = data.eqpId + "|" + data.putTime
+        val rawLongTime: Long = Dates.string2Long(data.putTime, Dates.fmt2)
+        data.site = data.eqpId.substring(0, 2)
+        data.factory = Sites.toFactoryId(data.site)
+        data.rowkey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+        data.day_date = Dates.long2String(rawLongTime - 8 * 60 * 60 * 1000, Dates.fmt5)
+        data.eqp_type = data.eqpId.split("-")(1).replaceAll("\\d+", "")
         data
       })
       .filter(_.tag != null)
@@ -54,28 +64,32 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       .process(new EveFunction())
       .map(new JoinMap)
     dateStream.print("处理结果")
-
-    // 2 种方法
-    // 1. DataStream关联为维表
-    // 2. 使用table/sql关联且写入也用table/sql
-    //    dateStream.addSink()
   }
 
   case class Subscription(eqpId: String, tubeId: String, states: String,
-                          text1: String, putTime: String, runTime: String,
+                          text1: String, putTime: String,
                           runCount: String,
+                          var output_qty: String = "1",
                           var tag: EveStep = null,
                           var dataType: String = null,
                           var endTime: String = null,
-                          var ct: Long = 0L,
                           var createTime: String = null,
+                          var ct: Long = 0L,
+
                           var st: Long = 0L,
-                          var set_st: Long = 0L,
                           var loss: Long = 0L,
                           var sertue: String = null,
-                          var set_st_loss: Long = 0L,
-                          var set_st_sertue: String = null
 
+                          var set_st: Long = 0L,
+                          var set_st_loss: Long = 0L,
+                          var set_st_sertue: String = null,
+
+                          var rowkey: String = null,
+                          var factory: String = null,
+                          var site: String = null,
+                          var eqp_type: String = null,
+                          var day_date: String = null,
+                          var shift: String = null
                          )
 
   /** 维表数据结构 */
@@ -129,7 +143,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
             loadFlag.set(false)
           }
         }
-      }, 0, 10, TimeUnit.MINUTES) // 10分加载一次
+      }, 0, 30, TimeUnit.MINUTES) // 30分加载一次
     }
 
     override def map(value: Subscription): Subscription = {
@@ -137,11 +151,12 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
 
       val r = cache.get((value.eqpId, value.tubeId))
       value.st = r.st
-      value.set_st = r.setSt
       value.loss = value.ct - r.st
       value.sertue = if (value.loss < 10 * 1000 * 60) "Function" else if (value.loss > 30 * 1000 * 60) "Trouble" else "Jam"
+
+      value.set_st = r.setSt
       value.set_st_loss = value.ct - r.setSt
-      value.set_st_sertue = if (value.loss < 10 * 1000 * 60) "Function" else if (value.loss > 30 * 1000 * 60) "Trouble" else "Jam"
+      value.set_st_sertue = if (value.set_st_loss < 10 * 1000 * 60) "Function" else if (value.set_st_loss > 30 * 1000 * 60) "Trouble" else "Jam"
 
       value
     }
