@@ -19,6 +19,7 @@
         <module>DFLogPreHandle</module>
         <module>HalmHandle</module>
         <module>flink-job-dataload</module>
+        <module>flink-job-eve</module>
         <module>flink-table-study</module>
     </modules>
 </project>
