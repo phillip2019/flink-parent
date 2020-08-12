@@ -31,6 +31,19 @@ import org.slf4j.LoggerFactory
   *
   * 设备价值效率任务
   *
+  * --job-name=DataLoaderJob
+  * --time-characteristic=ProcessingTime
+  * --bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
+  * --group.id=carlc4Test
+  * --topic=data-collection-pe-subscription
+  * --reset.strategy=earliest
+  * --hbase.table=todo-xxxx
+  * --mysql.url="jdbc:mysql://172.16.98.88:3306/test?useSSL=false&useUnicode=true&characterEncoding=UTF-8"
+  * --mysql.username=root
+  * --mysql.password=123456
+  * --mysql.sql=select * from eve_st_settings
+  * --topic.mapping=data-collection-pr-subscription=PE
+  *
   * @author carlc
   */
 object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {

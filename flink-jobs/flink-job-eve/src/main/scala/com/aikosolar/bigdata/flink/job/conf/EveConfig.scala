@@ -14,15 +14,15 @@ class EveConfig extends FLinkKafkaConfig {
   @Option(names = Array("-tm", "--topic.mapping"), required = false)
   var topicMapping: Map[String, String] = new util.LinkedHashMap[String, String]()
 
-  @Option(names = Array("--hbase.table"), required = false, description = Array("Hbase Table Name"))
+  @Option(names = Array("--hbase.table"), required = true, description = Array("Hbase Table Name"))
   var tableName: String = _
 
-  @Option(names = Array("--mysql.url"), required = false)
+  @Option(names = Array("--mysql.url"), required = true)
   var mysqlUrl: String = _
-  @Option(names = Array("--mysql.username"), required = false)
+  @Option(names = Array("--mysql.username"), required = true)
   var mysqlUsername: String = _
-  @Option(names = Array("--mysql.password"), required = false)
+  @Option(names = Array("--mysql.password"), required = true)
   var mysqlPassword: String = _
-  @Option(names = Array("--mysql.sql"), required = false)
+  @Option(names = Array("--mysql.sql"), required = true)
   var mysqlSQL: String = _
 }
