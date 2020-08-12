@@ -64,7 +64,8 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
         val tagService = EveTagServiceFactory.getEveTagService(x._1)
         if (tagService != null) {
           // 兼容TA的取值方式
-          data.tag = if ("ta".equalsIgnoreCase(data.eqp_type)) tagService.tag(data.CurrStep) else tagService.tag(data.text1)
+          val enumTag = if ("ta".equalsIgnoreCase(data.eqp_type)) tagService.tag(data.CurrStep) else tagService.tag(data.text1)
+          data.tag = if(enumTag == null) null else enumTag.toString
           val rawString = data.eqpId + "|" + data.putTime
           data.site = data.eqpId.substring(0, 2)
           data.factory = Sites.toFactoryId(data.site)
@@ -73,7 +74,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
         }
         data
       })
-      .filter(x => x.tag != null)
+      .filter(_.tag != null)
       //      可以用processTime,没必要分配水位
       //      .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[Subscription](Time.minutes(5)) {
       //        override def extractTimestamp(v: Subscription): Long = Dates.string2Long(v.putTime, Dates.fmt2)
@@ -128,12 +129,12 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
                           runCount: String,
                           CurrStep: String,
                           var output_qty: String = "1",
-                          var tag: EveStep = null,
+                          var tag: String = null,
                           var dataType: String = null,
                           var endTime: String = null,
                           var createTime: String = null,
                           var ct: Long = 0L,
-                          var step_name: EveStep = null,
+                          var step_name: String = null,
                           var st: Long = 0L,
                           var loss: Long = 0L,
                           var sertue: String = null,
@@ -160,7 +161,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       val previous = previousSubscription.value()
       previousSubscription.update(value)
       if (previous != null) {
-        previous.dataType = if (previous.tag.next() == value.tag) "Y" else "N"
+        previous.dataType = if (EveStep.valueOf(previous.tag).next() == value.tag) "Y" else "N"
         previous.endTime = previous.putTime
         previous.step_name = value.tag
         previous.ct = Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2)
