@@ -29,7 +29,7 @@ public class PEEveTagService implements EveTagService {
         if ("Memory Text1 unload".equalsIgnoreCase(text.trim())) {
             return EveStep.UNLOAD;
         }
-        if ("Recipe End Recipe:".contains(text.trim())) {
+        if (text.trim().contains("Recipe End Recipe:")) {
             return EveStep.CHANGE;
         }
         return null;

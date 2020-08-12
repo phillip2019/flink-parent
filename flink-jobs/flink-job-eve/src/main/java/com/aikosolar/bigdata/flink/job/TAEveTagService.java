@@ -29,7 +29,7 @@ public class TAEveTagService implements EveTagService {
         if ("7.0".equalsIgnoreCase(text.trim())) {
             return EveStep.UNLOAD;
         }
-        if ("8.0".contains(text.trim())) {
+        if ("8.0".equalsIgnoreCase(text.trim())) {
             return EveStep.CHANGE;
         }
         return null;
