@@ -82,40 +82,39 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       .process(new EveFunction())
       .map(new JoinMap)
 
-    dateStream.print()
-//    dateStream.addSink(new HBaseSink[Subscription](Builder.me().build(), c.tableName, new HBaseMutationConverter[Subscription] {
-//      override def insert(data: Subscription): Put = {
-//        val put: Put = new Put(Bytes.toBytes(data.rowkey))
-//        addColumn(put, "factory", data.factory)
-//        addColumn(put, "site", data.site)
-//        addColumn(put, "eqp_id", data.eqpId)
-//        addColumn(put, "eqp_type", data.eqp_type)
-//        addColumn(put, "day_date", data.day_date)
-//        addColumn(put, "shift", data.shift)
-//        addColumn(put, "test_time", data.putTime)
-//        addColumn(put, "end_time", data.endTime)
-//        addColumn(put, "tube_id", data.tubeId)
-//        addColumn(put, "odl_step_name", data.tag.toString)
-//        addColumn(put, "step_name", data.step_name.toString)
-//        addColumn(put, "data_type", data.dataType)
-//        addColumn(put, "output_qty", data.output_qty)
-//        addColumn(put, "ct", data.ct)
-//        addColumn(put, "st", data.st)
-//        addColumn(put, "loss", data.loss)
-//        addColumn(put, "sertue", data.sertue)
-//        addColumn(put, "set_st", data.set_st)
-//        addColumn(put, "set_st_loss", data.set_st_loss)
-//        addColumn(put, "set_st_sertue", data.set_st_sertue)
-//        addColumn(put, "createTime", data.createTime)
-//        addColumn(put, "run_count", data.runCount)
-//        addColumn(put, "states", data.states)
-//        put
-//      }
-//
-//      override def delete(record: Subscription): Delete = {
-//        null
-//      }
-//    }, HBaseOperation.INSERT))
+    dateStream.addSink(new HBaseSink[Subscription](Builder.me().build(), c.tableName, new HBaseMutationConverter[Subscription] {
+      override def insert(data: Subscription): Put = {
+        val put: Put = new Put(Bytes.toBytes(data.rowkey))
+        addColumn(put, "factory", data.factory)
+        addColumn(put, "site", data.site)
+        addColumn(put, "eqp_id", data.eqpId)
+        addColumn(put, "eqp_type", data.eqp_type)
+        addColumn(put, "day_date", data.day_date)
+        addColumn(put, "shift", data.shift)
+        addColumn(put, "test_time", data.putTime)
+        addColumn(put, "end_time", data.endTime)
+        addColumn(put, "tube_id", data.tubeId)
+        addColumn(put, "odl_step_name", data.tag.toString)
+        addColumn(put, "step_name", data.step_name.toString)
+        addColumn(put, "data_type", data.dataType)
+        addColumn(put, "output_qty", data.output_qty)
+        addColumn(put, "ct", data.ct)
+        addColumn(put, "st", data.st)
+        addColumn(put, "loss", data.loss)
+        addColumn(put, "sertue", data.sertue)
+        addColumn(put, "set_st", data.set_st)
+        addColumn(put, "set_st_loss", data.set_st_loss)
+        addColumn(put, "set_st_sertue", data.set_st_sertue)
+        addColumn(put, "createTime", data.createTime)
+        addColumn(put, "run_count", data.runCount)
+        addColumn(put, "states", data.states)
+        put
+      }
+
+      override def delete(record: Subscription): Delete = {
+        null
+      }
+    }, HBaseOperation.INSERT))
   }
 
   def addColumn(put: Put, key: String, value: Any): Unit = {
