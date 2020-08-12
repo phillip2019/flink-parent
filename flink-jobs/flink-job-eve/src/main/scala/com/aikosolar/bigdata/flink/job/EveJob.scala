@@ -222,7 +222,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
         value.set_st_loss = value.ct - r.setSt
         value.set_st_sertue = if (value.set_st_loss < 10 * 1000 * 60) "Function" else if (value.set_st_loss > 30 * 1000 * 60) "Trouble" else "Jam"
       } else {
-        logger.warn("维表缺失数据:({},{})", value.eqpId, value.tubeId)
+        logger.warn(s"维表缺失数据:(${value.eqpId},${value.tubeId})")
       }
       value
     }
