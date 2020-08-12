@@ -208,17 +208,22 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
     }
 
     override def map(value: Subscription): Subscription = {
-      while (!loadFlag.get()) {}
+      while (loadFlag.get()) {
+        Thread.sleep(100)
+      }
 
       val r = cache.get((value.eqpId, value.tubeId))
-      value.st = r.st
-      value.loss = value.ct - r.st
-      value.sertue = if (value.loss < 10 * 1000 * 60) "Function" else if (value.loss > 30 * 1000 * 60) "Trouble" else "Jam"
+      if (r != null) {
+        value.st = r.st
+        value.loss = value.ct - r.st
+        value.sertue = if (value.loss < 10 * 1000 * 60) "Function" else if (value.loss > 30 * 1000 * 60) "Trouble" else "Jam"
 
-      value.set_st = r.setSt
-      value.set_st_loss = value.ct - r.setSt
-      value.set_st_sertue = if (value.set_st_loss < 10 * 1000 * 60) "Function" else if (value.set_st_loss > 30 * 1000 * 60) "Trouble" else "Jam"
-
+        value.set_st = r.setSt
+        value.set_st_loss = value.ct - r.setSt
+        value.set_st_sertue = if (value.set_st_loss < 10 * 1000 * 60) "Function" else if (value.set_st_loss > 30 * 1000 * 60) "Trouble" else "Jam"
+      } else {
+        logger.warn("维表缺失数据:({},{})", value.eqpId, value.tubeId)
+      }
       value
     }
 
