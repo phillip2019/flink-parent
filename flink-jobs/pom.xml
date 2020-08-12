@@ -21,5 +21,6 @@
         <module>flink-job-dataload</module>
         <module>flink-job-eve</module>
         <module>flink-table-study</module>
+        <module>debezium-study</module>
     </modules>
 </project>
