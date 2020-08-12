@@ -14,7 +14,26 @@ public class TAEveTagService implements EveTagService {
         if (StringUtils.isBlank(text)) {
             return null;
         }
-        throw new UnsupportedOperationException("不支持");
+        if ("1.0".equalsIgnoreCase(text.trim())) {
+            return EveStep.LOAD;
+        }
+        if ("3.0".equalsIgnoreCase(text.trim())) {
+            return EveStep.CONDITION;
+        }
+        if ("4.0".equalsIgnoreCase(text.trim())) {
+            return EveStep.PROCESS;
+        }
+        if ("6.0".equalsIgnoreCase(text.trim())) {
+            return EveStep.CLEAN;
+        }
+        if ("7.0".equalsIgnoreCase(text.trim())) {
+            return EveStep.UNLOAD;
+        }
+        if ("8.0".contains(text.trim())) {
+            return EveStep.CHANGE;
+        }
+        return null;
+
     }
 
     private TAEveTagService() {

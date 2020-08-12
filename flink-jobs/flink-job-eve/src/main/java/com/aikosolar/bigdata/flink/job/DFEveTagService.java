@@ -19,7 +19,7 @@ public class DFEveTagService implements EveTagService {
         if ("pump down".equalsIgnoreCase(text.trim())) {
             return EveStep.CONDITION;
         }
-        if ("Check Bubbler back to atmo pressure".equalsIgnoreCase(text.trim())) {
+        if ("2nd POCl3-deposition".equalsIgnoreCase(text.trim())) {
             return EveStep.PROCESS;
         }
         if ("Set tube pressure".equalsIgnoreCase(text.trim())) {
@@ -44,5 +44,6 @@ public class DFEveTagService implements EveTagService {
     public static EveTagService me() {
         return Holder.instance;
     }
+
 
 }

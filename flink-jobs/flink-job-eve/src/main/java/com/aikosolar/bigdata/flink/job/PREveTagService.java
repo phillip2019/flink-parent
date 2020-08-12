@@ -29,7 +29,7 @@ public class PREveTagService implements EveTagService {
         if ("Memory Text1 Fill tube with N2".equalsIgnoreCase(text.trim())) {
             return EveStep.UNLOAD;
         }
-        if ("Recipe End Recipe:".equalsIgnoreCase(text.trim())) {
+        if ("Recipe End Recipe:".contains(text.trim())) {
             return EveStep.CHANGE;
         }
         return null;
