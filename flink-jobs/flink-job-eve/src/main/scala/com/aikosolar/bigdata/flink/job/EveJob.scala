@@ -120,7 +120,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
 
   def addColumn(put: Put, key: String, value: Any): Unit = {
     if (value != null) {
-      put.addColumn(Bytes.toBytes("cf"), Bytes.toBytes("factory"), Bytes.toBytes(value.toString))
+      put.addColumn(Bytes.toBytes("cf"), Bytes.toBytes(key), Bytes.toBytes(value.toString))
     }
   }
 
@@ -161,7 +161,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       val previous = previousSubscription.value()
       previousSubscription.update(value)
       if (previous != null) {
-        previous.dataType = if (EveStep.valueOf(previous.tag).next() == value.tag) "Y" else "N"
+        previous.dataType = if (EveStep.valueOf(previous.tag).next().toString.equals(value.tag)) "Y" else "N"
         previous.endTime = previous.putTime
         previous.step_name = value.tag
         previous.ct = Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2)
