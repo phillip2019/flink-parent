@@ -73,7 +73,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
         }
         data
       })
-      .filter(_.tag != null)
+      .filter(x => x.tag != null)
       //      可以用processTime,没必要分配水位
       //      .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[Subscription](Time.minutes(5)) {
       //        override def extractTimestamp(v: Subscription): Long = Dates.string2Long(v.putTime, Dates.fmt2)
