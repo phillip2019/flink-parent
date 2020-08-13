@@ -40,19 +40,20 @@ import scala.collection.JavaConversions._
   *
   * 运行参数:
   *
-  * flink run -m yarn-cluster \
-  * -p 3 \
-  * -ys 2 \
-  * -yjm 1024 \
-  * -ytm 2048 \
-  * -ynm HalmFull \
-  * --class com.aikosolar.bigdata.HalmFullJob  /root/halm/HalmHandle-1.1.0.jar \
-  * --job-name=eqpalarmJob
-  * --bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
-  * --group.id=eqp-alarm-group_test
-  * --reset.strategy=earliest
-  * --hbase.table=ods:ods_f_eqp_all_alarm
-  * --topic=data-collection-eqp-alarm
+flink run -m yarn-cluster \
+-p 2 \
+-ys 1 \
+-yjm 1024 \
+-ytm 1024 \
+-ynm EqpStatusJob \
+--class com.aikosolar.bigdata.flink.job.EqpStatus2OracleJob  /root/flink_job/AllEqp/jar/Eqp2Oracle-1.0.0.jar \
+--runMode=prod \
+--checkpointDataUri=hdfs://172.16.98.85:8020/flink-checkpoint \
+--job-name=EqpStatusJob \
+--bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092 \
+--group.id=eqp-status-group \
+--reset.strategy=groupoffsets \
+--topic=data-collection-eqp-status
   *
   */
 object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
@@ -60,7 +61,6 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
     * 业务方法[不需自己调用env.execute()]
     */
   override def run0(env: StreamExecutionEnvironment, c: AllEqpConfig, rawKafkaSource: DataStream[String]): Unit = {
-
     val actionStream: DataStream[Action] = rawKafkaSource
       .map(JSON.parseObject(_))
       .map(jsonObj => {
@@ -73,13 +73,12 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         }
         result
       })
-      .filter(r=>r.containsKey("eqpid"))
       .filter(r=>r.containsKey("puttime"))
       .filter(r=>r.containsKey("status"))
       .filter(r=>r.containsKey("alarmtext"))
       .filter(r=>r.containsKey("alarmcode"))
       .filter(r => Strings.isValidEqpId(r.get("eqpid")))
-      .filter(r=> !StringUtils.contains(Strings.getNotnull(r.getOrDefault("alarmtext", "")),"cleared") )
+      .filter(r=> !StringUtils.contains(Strings.getNotnull(r.get("alarmtext", "")).toLowerCase(),"cleared") )
       .map(m => {
         val eqpid = m.get("eqpid").toString
         val putTime = Strings.getNotnull(m.get("puttime"))
@@ -112,6 +111,7 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         | (MACHINEID, OCCURTIME, ALARMID, MACHINESTATUS, ALARMTEXT, SERORCLEAR, MESSAGETYPE, UPDATETIME, FACTORY)
         | VALUES(?,?,?,?,?,?,?,?,?)
       """.stripMargin
+
 
     actionStream.addSink(new JdbcSink[Action](conf, actionSql, new JdbcWriter[Action] {
       override def accept(stmt: PreparedStatement, data: Action): Unit = {

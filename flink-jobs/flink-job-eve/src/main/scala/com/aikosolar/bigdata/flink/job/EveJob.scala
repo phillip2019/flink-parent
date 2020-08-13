@@ -70,6 +70,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
           data.site = data.eqpId.substring(0, 2)
           data.factory = Sites.toFactoryId(data.site)
           data.rowkey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+          data.shift=Dates.toShift(data.putTime, Dates.fmt2, data.site)
           data.day_date = Dates.long2String(Dates.string2Long(data.putTime, Dates.fmt2) - 8 * 60 * 60 * 1000, Dates.fmt5)
         }
         data
@@ -98,7 +99,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
         addColumn(put, "odl_step_name", data.tag.toString)
         addColumn(put, "step_name", data.step_name.toString)
         addColumn(put, "data_type", data.dataType)
-        addColumn(put, "output_qty", data.output_qty)
+        addColumn(put, "output_qty", "1")
         addColumn(put, "ct", data.ct)
         addColumn(put, "st", data.st)
         addColumn(put, "loss", data.loss)
@@ -108,7 +109,12 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
         addColumn(put, "set_st_sertue", data.set_st_sertue)
         addColumn(put, "createTime", data.createTime)
         addColumn(put, "run_count", data.runCount)
-        addColumn(put, "states", data.states)
+        if("ta".equalsIgnoreCase(data.eqp_type)){
+          addColumn(put, "states", data.status)
+        }else{
+          addColumn(put, "states", data.states)
+        }
+
         put
       }
 
@@ -125,6 +131,7 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
   }
 
   case class Subscription(eqpId: String, tubeId: String, states: String,
+                          status: String,
                           text1: String, putTime: String,
                           runCount: String,
                           CurrStep: String,
