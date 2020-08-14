@@ -31,6 +31,7 @@
         <module>flink-commons</module>
         <module>flink-connectors</module>
         <module>flink-jobs</module>
+        <module>flink-dynamic-cep</module>
     </modules>
 
     <dependencies>
