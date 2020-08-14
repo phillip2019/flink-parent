@@ -169,9 +169,9 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       previousSubscription.update(value)
       if (previous != null) {
         previous.dataType = if (EveStep.valueOf(previous.tag).next().toString.equals(value.tag)) "Y" else "N"
-        previous.endTime = previous.putTime
+        previous.endTime = value.putTime
         previous.step_name = value.tag
-        previous.ct = Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2)
+        previous.ct = (Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2))/1000
         previous.createTime = Dates.now(Dates.fmt2)
         out.collect(previous)
       }
@@ -224,11 +224,11 @@ object EveJob extends FLinkKafkaWithTopicRunner[EveConfig] {
       if (r != null) {
         value.st = r.st
         value.loss = value.ct - r.st
-        value.sertue = if (value.loss < 10 * 1000 * 60) "Function" else if (value.loss > 30 * 1000 * 60) "Trouble" else "Jam"
+        value.sertue = if (value.loss < 10 * 60) "Function" else if (value.loss > 30  * 60) "Trouble" else "Jam"
 
         value.set_st = r.setSt
         value.set_st_loss = value.ct - r.setSt
-        value.set_st_sertue = if (value.set_st_loss < 10 * 1000 * 60) "Function" else if (value.set_st_loss > 30 * 1000 * 60) "Trouble" else "Jam"
+        value.set_st_sertue = if (value.set_st_loss < 10  * 60) "Function" else if (value.set_st_loss > 30  * 60) "Trouble" else "Jam"
       } else {
         logger.warn(s"维表缺失数据:(${value.eqpId},${value.tubeId})")
       }
