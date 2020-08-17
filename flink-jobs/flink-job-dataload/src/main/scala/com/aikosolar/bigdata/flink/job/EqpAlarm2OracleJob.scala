@@ -11,11 +11,6 @@ import com.aikosolar.bigdata.flink.job.conf.AllEqpConfig
 import com.alibaba.fastjson.JSON
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.commons.lang3.StringUtils
-import org.apache.flink.cep.functions.PatternProcessFunction
-import org.apache.flink.cep.nfa.compiler.NFACompiler
-import org.apache.flink.cep.operator.CepOperator
-import org.apache.flink.cep.scala.pattern.Pattern
-import org.apache.flink.cep.scala.{CEP, PatternStream}
 import org.apache.flink.streaming.api.scala._
 
 import scala.collection.JavaConversions._
@@ -115,12 +110,6 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         | (MACHINEID, OCCURTIME, ALARMID, MACHINESTATUS, ALARMTEXT, SERORCLEAR, MESSAGETYPE, UPDATETIME, FACTORY)
         | VALUES(?,?,?,?,?,?,?,?,?)
       """.stripMargin
-    CepOperator
-    NFACompiler
-    PatternProcessFunction
-//    val pattern:Pattern = null
-//    val patternStream:PatternStream = CEP.pattern(actionStream, pattern)
-
 
     actionStream.addSink(new JdbcSink[Action](conf, actionSql, new JdbcWriter[Action] {
       override def accept(stmt: PreparedStatement, data: Action): Unit = {
@@ -133,8 +122,6 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         stmt.setString(7, data.messagetype)
         stmt.setString(8, data.updatetime)
         stmt.setString(9, data.factory)
-
-        CEP
       }
     }))
 

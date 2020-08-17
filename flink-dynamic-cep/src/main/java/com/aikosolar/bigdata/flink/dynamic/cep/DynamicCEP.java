@@ -37,7 +37,7 @@ public class DynamicCEP extends CEP {
         } else {
             pattern = getPattern(selector);
         }
-        return new PatternStream<>(input, pattern);
+        return CEP.pattern(input, pattern);
     }
 
     private static <T> Pattern<T, ?> getPattern(DynamicPatternSelector<T> selector) {
