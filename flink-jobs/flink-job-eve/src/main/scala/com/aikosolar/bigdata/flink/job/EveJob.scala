@@ -165,16 +165,16 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
                           runCount: String,
                           states: String,
                           var output_qty: String = "1", // 默认1
-                          var endTime: String = null, // todo
-                          var step_name: String = null, // todo
-                          var dataType: String = null, // todo
-                          var ct: Long = 0L, // todo
-                          var st: Long = 0L, // todo
-                          var loss: Long = 0L, // todo
-                          var sertue: String = null, // todo
-                          var set_st: Long = 0L, // todo
-                          var set_st_loss: Long = 0L, // todo
-                          var set_st_sertue: String = null // todo
+                          var endTime: String = null,
+                          var step_name: String = null,
+                          var dataType: String = null,
+                          var ct: Long = 0L,
+                          var st: Long = 0L,
+                          var loss: Long = 0L,
+                          var sertue: String = null,
+                          var set_st: Long = 0L,
+                          var set_st_loss: Long = 0L,
+                          var set_st_sertue: String = null
                          )
 
   /** 维表数据结构 */
@@ -183,18 +183,18 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
   class EveFunction extends KeyedProcessFunction[(String, String), Subscription, Subscription] {
     lazy val previousSubscription = getRuntimeContext.getState(new ValueStateDescriptor[Subscription]("previous", classOf[Subscription]))
 
-//    override def processElement(value: Subscription, ctx: KeyedProcessFunction[(String, String), Subscription, Subscription]#Context, out: Collector[Subscription]): Unit = {
-//      val previous = previousSubscription.value()
-//      previousSubscription.update(value)
-//      if (previous != null) {
-//        previous.dataType = if (EveStep.valueOf(previous.tag).next().toString.equals(value.tag)) "Y" else "N"
-//        previous.endTime = value.putTime
-//        previous.step_name = value.tag
-//        previous.ct = (Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2))/1000
-//        previous.createTime = Dates.now(Dates.fmt2)
-//        out.collect(previous)
-//      }
-//    }
+    //    override def processElement(value: Subscription, ctx: KeyedProcessFunction[(String, String), Subscription, Subscription]#Context, out: Collector[Subscription]): Unit = {
+    //      val previous = previousSubscription.value()
+    //      previousSubscription.update(value)
+    //      if (previous != null) {
+    //        previous.dataType = if (EveStep.valueOf(previous.tag).next().toString.equals(value.tag)) "Y" else "N"
+    //        previous.endTime = value.putTime
+    //        previous.step_name = value.tag
+    //        previous.ct = (Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2))/1000
+    //        previous.createTime = Dates.now(Dates.fmt2)
+    //        out.collect(previous)
+    //      }
+    //    }
 
     override def processElement(value: Subscription, ctx: KeyedProcessFunction[(String, String), Subscription, Subscription]#Context, out: Collector[Subscription]): Unit = {
       val previous = previousSubscription.value()
