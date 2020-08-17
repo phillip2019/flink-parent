@@ -7,6 +7,7 @@ import java.util.regex.Pattern
   */
 object Strings {
   val EQPID_REGEX: Pattern = Pattern.compile("^[A-Z]\\d-[A-Z]+\\d{1,2}$")
+  val DATE_TIME_REGEX: Pattern = Pattern.compile("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$")
 
   /**
     * 驼峰转下滑
@@ -37,6 +38,13 @@ object Strings {
     */
   def isValidEqpId(obj: Object): Boolean = {
     if (obj == null) false else EQPID_REGEX.matcher(obj.toString.trim.toUpperCase()).matches()
+  }
+
+  /**
+    * 判断字符串是否满足特定的时间格式(yyyy-MM-dd HH:mm:ss)
+    */
+  def isValidDataTime(value: String): Boolean = {
+    if (value == null || value.trim.isEmpty) false else DATE_TIME_REGEX.matcher(value.trim).matches()
   }
 
   def main(args: Array[String]): Unit = {
