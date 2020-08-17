@@ -12,6 +12,26 @@ import org.apache.flink.configuration.Configuration;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
+/*
+
+nacos 上的配置如下:
+
+import org.apache.flink.api.java.tuple.Tuple3
+import org.apache.flink.cep.pattern.Pattern
+import org.apache.flink.streaming.api.windowing.time.Time
+import com.aikosolar.bigdata.flink.dynamic.cep.AviatorCondition
+import org.apache.flink.cep.pattern.conditions.IterativeCondition
+
+def getPattern() {
+    return Pattern.<Tuple3<String, String, String>> begin("start")
+            .where(new AviatorCondition("f2 == \"order\""))
+            .next("next")
+            .where(new AviatorCondition("f2 == \"pay\""))
+            .within(Time.seconds(3))
+}
+
+*/
+
 /**
  * 基于 <a href="https://nacos.io">Nacos</a> 的 Pattern 选择器
  *
@@ -22,6 +42,7 @@ public class NacosPatternSelector extends DynamicPatternSelector<Tuple3<String, 
     private ConfigService configService;
 
     private Pattern<Tuple3<String, String, String>, ?> pattern;
+
 
     public NacosPatternSelector() {
         String serverAddr = "localhost";
