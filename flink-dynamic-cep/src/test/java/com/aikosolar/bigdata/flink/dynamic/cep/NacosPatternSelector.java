@@ -5,6 +5,7 @@ import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.Listener;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.configuration.Configuration;
 
@@ -16,28 +17,38 @@ import java.util.concurrent.Executor;
  *
  * @author carlc
  */
-public class NacosPatternSelector extends DynamicPatternSelector<String> implements Listener {
+public class NacosPatternSelector extends DynamicPatternSelector<Tuple3<String, String, String>> implements Listener {
 
     private ConfigService configService;
 
-    private String content;
+    private Pattern<Tuple3<String, String, String>, ?> pattern;
+
+    public NacosPatternSelector() {
+        String serverAddr = "localhost";
+        String dataId = "test";
+        String group = "FLINK-EVE";
+        Properties properties = new Properties();
+        properties.put(PropertyKeyConst.SERVER_ADDR, serverAddr);
+        try {
+            configService = NacosFactory.createConfigService(properties);
+            String content = configService.getConfig(dataId, group, 5000);
+            System.out.println("服务器groovy代码:\n" + content);
+            this.pattern = (Pattern<Tuple3<String, String, String>, ?>) ScriptEngine.getPattern(content, "getPattern");
+            configService.addListener(dataId, group, this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
-        String serverAddr = "localhost";
-        String dataId = "flink-eve-prod";
-        String group = "DEFAULT_GROUP";
-        Properties properties = new Properties();
-        properties.put(PropertyKeyConst.SERVER_ADDR, serverAddr);
-        configService = NacosFactory.createConfigService(properties);
-        this.content = configService.getConfig(dataId, group, 5000);
-        configService.addListener(dataId, group, this);
     }
 
+
     @Override
-    public Pair<String, Pattern<String, ?>> select() throws Exception {
-        return null;
+    public Pair<String, Pattern<Tuple3<String, String, String>, ?>> select() throws Exception {
+        return Pair.of("test", this.pattern);
     }
 
     @Override
@@ -54,8 +65,12 @@ public class NacosPatternSelector extends DynamicPatternSelector<String> impleme
     }
 
     @Override
-    public void receiveConfigInfo(String configInfo) {
-        this.content = configInfo;
+    public void receiveConfigInfo(String content) {
+        try {
+            this.pattern = (Pattern<Tuple3<String, String, String>, ?>) ScriptEngine.getPattern(content, "getPattern");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
