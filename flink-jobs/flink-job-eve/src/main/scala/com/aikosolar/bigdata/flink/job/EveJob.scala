@@ -108,7 +108,7 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
       .process(new EveFunction())
       .map(new JoinMap)
 
-    dateStream.print("结果")
+//    dateStream.print("结果")
 
     dateStream.addSink(new HBaseSink[Subscription](Builder.me().build(), c.tableName, new HBaseMutationConverter[Subscription] {
       override def insert(data: Subscription): Put = {
