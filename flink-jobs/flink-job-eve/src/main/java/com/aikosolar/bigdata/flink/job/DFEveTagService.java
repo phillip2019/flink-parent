@@ -16,13 +16,13 @@ public class DFEveTagService implements EveTagService {
         if ("process started".equalsIgnoreCase(text.trim())) {
             return EveStep.LOAD;
         }
-        if ("Loading completed".equalsIgnoreCase(text.trim())) {
+        if ("pump down".equalsIgnoreCase(text.trim())) {
             return EveStep.CONDITION;
         }
         if ("1st POCl3-deposition".equalsIgnoreCase(text.trim())) {
             return EveStep.PROCESS;
         }
-        if ("2nd POCl3-deposition".equalsIgnoreCase(text.trim())) {
+        if ("Check Bubbler back to atmo pressure".equalsIgnoreCase(text.trim())) {
             return EveStep.CLEAN;
         }
         if ("Unloading supervision".equalsIgnoreCase(text.trim())) {
