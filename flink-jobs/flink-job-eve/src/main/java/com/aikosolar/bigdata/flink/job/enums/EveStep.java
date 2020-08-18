@@ -94,7 +94,7 @@ public enum EveStep {
     /**
      * 下一个step(循环状态机)
      */
-    public abstract EveStep next();
+    protected abstract EveStep next();
 
     /**
      * 根据设备类型获取下一个step
