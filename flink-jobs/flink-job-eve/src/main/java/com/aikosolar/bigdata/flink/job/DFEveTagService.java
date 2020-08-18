@@ -13,24 +13,43 @@ public class DFEveTagService implements EveTagService {
         if (StringUtils.isBlank(text)) {
             return null;
         }
+        if ("process started".equalsIgnoreCase(text.trim())) {
+            return EveStep.LOAD;
+        }
+        if ("Loading completed".equalsIgnoreCase(text.trim())) {
+            return EveStep.CONDITION;
+        }
+        if ("1st POCl3-deposition".equalsIgnoreCase(text.trim())) {
+            return EveStep.PROCESS;
+        }
+        if ("2nd POCl3-deposition".equalsIgnoreCase(text.trim())) {
+            return EveStep.CLEAN;
+        }
+        if ("Unloading supervision".equalsIgnoreCase(text.trim())) {
+            return EveStep.UNLOAD;
+        }
         if ("recipe end".equalsIgnoreCase(text.trim())) {
+            return EveStep.CHANGE;
+        }
+
+      /*  if ("process started".equalsIgnoreCase(text.trim())) {
             return EveStep.LOAD;
         }
         if ("pump down".equalsIgnoreCase(text.trim())) {
             return EveStep.CONDITION;
         }
-        if ("2nd POCl3-deposition".equalsIgnoreCase(text.trim())) {
+        if ("1st POCl3-deposition".equalsIgnoreCase(text.trim())) {
             return EveStep.PROCESS;
         }
-        if ("Set tube pressure".equalsIgnoreCase(text.trim())) {
+        if ("Check Bubbler back to atmo pressure".equalsIgnoreCase(text.trim())) {
             return EveStep.CLEAN;
         }
-        if ("Loading completed".equalsIgnoreCase(text.trim())) {
+        if ("backfill".equalsIgnoreCase(text.trim())) {
             return EveStep.UNLOAD;
         }
-        if ("process started".equalsIgnoreCase(text.trim())) {
+        if ("recipe end".equalsIgnoreCase(text.trim())) {
             return EveStep.CHANGE;
-        }
+        }*/
         return null;
     }
 
