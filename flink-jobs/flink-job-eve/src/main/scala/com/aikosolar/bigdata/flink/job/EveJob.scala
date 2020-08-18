@@ -8,6 +8,7 @@ import java.util.{HashMap, Map}
 import com.aikosolar.bigdata.flink.common.enums.Sites
 import com.aikosolar.bigdata.flink.common.utils.{Dates, IOUtils, Strings}
 import com.aikosolar.bigdata.flink.connectors.hbase.mapper.HBaseMutationConverter
+import com.aikosolar.bigdata.flink.connectors.hbase.utils.Puts
 import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
 import com.aikosolar.bigdata.flink.connectors.hbase.{HBaseOperation, HBaseSink}
 import com.aikosolar.bigdata.flink.job.conf.EveConfig
@@ -71,21 +72,21 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
       })
       .filter(x => Strings.isValidEqpId(x.get("eqpid")) && Strings.isValidDataTime(MapUtils.getString(x, "puttime", "")))
       .map(x => {
-        val eqpId: String = MapUtils.getString(x, "eqpid", "") // OK
-        val tubeId: String = MapUtils.getString(x, "tubeid", "") // OK
-        val states: String = MapUtils.getString(x, Fileds.STATES, "") // OK
-        val putTime: String = MapUtils.getString(x, "puttime", "") // OK
-        val runCount: String = MapUtils.getString(x, "runcount", "") // OK
-        val eqpType = StringUtils.removePattern(eqpId.split("-")(1), "\\d+") // OK
+        val eqpId: String = MapUtils.getString(x, "eqpid", "")
+        val tubeId: String = MapUtils.getString(x, "tubeid", "")
+        val states: String = MapUtils.getString(x, Fileds.STATES, "")
+        val putTime: String = MapUtils.getString(x, "puttime", "")
+        val runCount: String = MapUtils.getString(x, "runcount", "")
+        val eqpType = StringUtils.removePattern(eqpId.split("-")(1), "\\d+")
         val rawString = eqpId + "|" + putTime
-        val rowkey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString // OK
-        val site = eqpId.substring(0, 2) // OK
-        val factory = Sites.toFactoryId(site) // OK
-        val shift = Dates.toShift(putTime, Dates.fmt2, site) // OK
-        val day_date = Dates.long2String(Dates.string2Long(putTime, Dates.fmt2) - 8 * 60 * 60 * 1000, Dates.fmt5) // OK
+        val rowkey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+        val site = eqpId.substring(0, 2)
+        val factory = Sites.toFactoryId(site)
+        val shift = Dates.toShift(putTime, Dates.fmt2, site)
+        val day_date = Dates.long2String(Dates.string2Long(putTime, Dates.fmt2) - 8 * 60 * 60 * 1000, Dates.fmt5)
         val createTime = Dates.now(Dates.fmt2)
         val tagService = EveTagServiceFactory.getEveTagService(eqpType)
-        val tag = if (tagService == null) null else { // OK
+        val tag = if (tagService == null) null else {
           val enumTag = tagService.tag(MapUtils.getString(x, Fileds.TEXT1, ""))
           if (enumTag == null) null else enumTag.toString
         }
@@ -108,34 +109,36 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
       .process(new EveFunction())
       .map(new JoinMap)
 
-    dateStream.print("结果")
+    if (!"prod".equals(c.runMode)) {
+      dateStream.print("结果")
+    }
 
     dateStream.addSink(new HBaseSink[Subscription](Builder.me().build(), c.tableName, new HBaseMutationConverter[Subscription] {
       override def insert(data: Subscription): Put = {
         val put: Put = new Put(Bytes.toBytes(data.rowkey))
-        addColumn(put, "factory", data.factory)
-        addColumn(put, "site", data.site)
-        addColumn(put, "eqp_id", data.eqpId)
-        addColumn(put, "eqp_type", data.eqpType)
-        addColumn(put, "day_date", data.dayDate)
-        addColumn(put, "shift", data.shift)
-        addColumn(put, "test_time", data.putTime)
-        addColumn(put, "end_time", data.endTime)
-        addColumn(put, "tube_id", data.tubeId)
-        addColumn(put, "odl_step_name", data.tag.toString)
-        addColumn(put, "step_name", data.step_name.toString)
-        addColumn(put, "data_type", data.dataType)
-        addColumn(put, "output_qty", "1")
-        addColumn(put, "ct", data.ct)
-        addColumn(put, "st", data.st)
-        addColumn(put, "loss", data.loss)
-        addColumn(put, "sertue", data.sertue)
-        addColumn(put, "set_st", data.set_st)
-        addColumn(put, "set_st_loss", data.set_st_loss)
-        addColumn(put, "set_st_sertue", data.set_st_sertue)
-        addColumn(put, "createTime", data.createTime)
-        addColumn(put, "run_count", data.runCount)
-        addColumn(put, "states", data.states)
+        Puts.addColumn(put, "factory", data.factory)
+        Puts.addColumn(put, "site", data.site)
+        Puts.addColumn(put, "eqp_id", data.eqpId)
+        Puts.addColumn(put, "eqp_type", data.eqpType)
+        Puts.addColumn(put, "day_date", data.dayDate)
+        Puts.addColumn(put, "shift", data.shift)
+        Puts.addColumn(put, "test_time", data.putTime)
+        Puts.addColumn(put, "end_time", data.endTime)
+        Puts.addColumn(put, "tube_id", data.tubeId)
+        Puts.addColumn(put, "odl_step_name", data.tag.toString)
+        Puts.addColumn(put, "step_name", data.step_name.toString)
+        Puts.addColumn(put, "data_type", data.dataType)
+        Puts.addColumn(put, "output_qty", "1")
+        Puts.addColumn(put, "ct", data.ct)
+        Puts.addColumn(put, "st", data.st)
+        Puts.addColumn(put, "loss", data.loss)
+        Puts.addColumn(put, "sertue", data.sertue)
+        Puts.addColumn(put, "set_st", data.set_st)
+        Puts.addColumn(put, "set_st_loss", data.set_st_loss)
+        Puts.addColumn(put, "set_st_sertue", data.set_st_sertue)
+        Puts.addColumn(put, "createTime", data.createTime)
+        Puts.addColumn(put, "run_count", data.runCount)
+        Puts.addColumn(put, "states", data.states)
         put
       }
 
@@ -143,12 +146,6 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
         null
       }
     }, HBaseOperation.INSERT))
-  }
-
-  def addColumn(put: Put, key: String, value: Any): Unit = {
-    if (value != null) {
-      put.addColumn(Bytes.toBytes("cf"), Bytes.toBytes(key), Bytes.toBytes(value.toString))
-    }
   }
 
   case class Subscription(rowkey: String,
