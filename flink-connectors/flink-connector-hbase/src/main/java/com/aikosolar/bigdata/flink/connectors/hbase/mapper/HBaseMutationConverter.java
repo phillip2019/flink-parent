@@ -27,5 +27,7 @@ public interface HBaseMutationConverter<IN> extends Serializable {
 
     Put insert(IN record);
 
-    Delete delete(IN record);
+    default Delete delete(IN record) {
+        throw new UnsupportedOperationException("未实现");
+    }
 }
