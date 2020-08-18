@@ -194,11 +194,36 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
     //    }
 
     override def processElement(value: Subscription, ctx: KeyedProcessFunction[(String, String), Subscription, Subscription]#Context, out: Collector[Subscription]): Unit = {
+//      val previous = previousSubscription.value()
+//      if (previous != null) {
+//        if (previous.tag.equals(value.tag)) { // 如果2条数据的tag相同，且当前数据时间 > 前数据时间 => 状态更新为当前数据
+//          if (previous.putTime.compareTo(value.putTime) < 0) {
+//            previousSubscription.update(value)
+//          }
+//        } else {
+//          previousSubscription.update(value)
+//          previous.endTime = value.putTime
+//          previous.step_name = value.tag
+//          previous.dataType = if (EveStep.valueOf(previous.tag).next(value.eqpType).toString.equals(value.tag)) "Y" else "N"
+//          previous.ct = (Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2)) / 1000
+//          out.collect(previous)
+//        }
+//      } else {
+//        previousSubscription.update(value)
+//      }
       val previous = previousSubscription.value()
       if (previous != null) {
         if (previous.tag.equals(value.tag)) { // 如果2条数据的tag相同，且当前数据时间 > 前数据时间 => 状态更新为当前数据
-          if (previous.putTime.compareTo(value.putTime) < 0) {
-            previousSubscription.update(value)
+          if (previous.eqpType.equals("DF")) {
+            if ("CONDITION".equals(previous.tag) || "CLEAN".equals(previous.tag)) {
+              if (previous.putTime.compareTo(value.putTime) > 0) {
+                previousSubscription.update(value)
+              }
+            }
+          } else {
+            if (previous.putTime.compareTo(value.putTime) < 0) {
+              previousSubscription.update(value)
+            }
           }
         } else {
           previousSubscription.update(value)

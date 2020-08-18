@@ -16,7 +16,7 @@ public class DFEveTagService implements EveTagService {
         if ("process started".equalsIgnoreCase(text.trim())) {
             return EveStep.LOAD;
         }
-        if ("pump down".equalsIgnoreCase(text.trim())) {
+        if ("Loading completed".equalsIgnoreCase(text.trim())) {
             return EveStep.CONDITION;
         }
         if ("1st POCl3-deposition".equalsIgnoreCase(text.trim())) {
