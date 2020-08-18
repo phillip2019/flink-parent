@@ -207,7 +207,7 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
           previousSubscription.update(value)
           previous.endTime = value.putTime
           previous.step_name = value.tag
-          previous.dataType = if (EveStep.valueOf(previous.tag).next().toString.equals(value.tag)) "Y" else "N"
+          previous.dataType = if (EveStep.valueOf(previous.tag).next(value.eqpType).toString.equals(value.tag)) "Y" else "N"
           previous.ct = (Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2)) / 1000
           out.collect(previous)
         }
