@@ -96,7 +96,7 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         val status = m.get("status")
         val alarmId = Strings.getNotnull(m.get("alarmcode"))
 
-         Action(eqpid, putTime, alarmId,status,alarmText, serorClear, "alarm", null, factory)
+         Action(eqpid, putTime, alarmId,status,alarmText, serorClear, "Alarm", null, factory)
       })
 
 
