@@ -10,6 +10,7 @@ import com.aikosolar.bigdata.flink.connectors.jdbc.writter.JdbcWriter
 import com.aikosolar.bigdata.flink.job.conf.AllEqpConfig
 import com.alibaba.fastjson.JSON
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.streaming.api.scala._
 
@@ -71,6 +72,7 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
           // 统一转换为小写字符串,可以避免很多不必要的麻烦
           result.putIfAbsent(key.toLowerCase(), value)
         }
+
         result
       })
       .filter(r=>r.containsKey("puttime"))
@@ -78,8 +80,9 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
       .filter(r=>r.containsKey("alarmtext"))
       .filter(r=>r.containsKey("alarmcode"))
       .filter(r => Strings.isValidEqpId(r.get("eqpid")))
-      .filter(r=> !StringUtils.contains(Strings.getNotnull(r.get("alarmtext", "")).toLowerCase(),"cleared") )
+      .filter(r=> !StringUtils.contains(MapUtils.getString(r, "alarmtext", "").toLowerCase(),"cleared") )
       .map(m => {
+        val t=StringUtils.contains(Strings.getNotnull(m.get("alarmtext", "")).toLowerCase,"cleared")
         val eqpid = m.get("eqpid").toString
         val putTime = Strings.getNotnull(m.get("puttime"))
         val factory = eqpid.substring(0, 1) match {
@@ -96,34 +99,36 @@ object EqpAlarm2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
          Action(eqpid, putTime, alarmId,status,alarmText, serorClear, "alarm", null, factory)
       })
 
-    val config:Config = ConfigFactory.load()
 
-     val conf = new JdbcConnectionOptions.Builder()
-      .withDriverName(config.getString("connection.drivername"))
-      .withUrl(config.getString("connection.url"))
-      .withUsername(config.getString("connection.username"))
-      .withPassword(config.getString("connection.password"))
-      .build()
-    val actionSql =
-      """
-        |INSERT INTO APIPRO.EAS_MACHINEDATA_ACTION
-        | (MACHINEID, OCCURTIME, ALARMID, MACHINESTATUS, ALARMTEXT, SERORCLEAR, MESSAGETYPE, UPDATETIME, FACTORY)
-        | VALUES(?,?,?,?,?,?,?,?,?)
-      """.stripMargin
 
-    actionStream.addSink(new JdbcSink[Action](conf, actionSql, new JdbcWriter[Action] {
-      override def accept(stmt: PreparedStatement, data: Action): Unit = {
-        stmt.setString(1, data.machineid)
-        stmt.setString(2, data.occurtime)
-        stmt.setString(3, data.alarmid)
-        stmt.setObject(4, data.machinestatus)
-        stmt.setString(5, data.alarmtext)
-        stmt.setString(6, data.serorclear)
-        stmt.setString(7, data.messagetype)
-        stmt.setString(8, data.updatetime)
-        stmt.setString(9, data.factory)
-      }
-    }))
+     val config:Config = ConfigFactory.load()
+
+      val conf = new JdbcConnectionOptions.Builder()
+       .withDriverName(config.getString("connection.drivername"))
+       .withUrl(config.getString("connection.url"))
+       .withUsername(config.getString("connection.username"))
+       .withPassword(config.getString("connection.password"))
+       .build()
+     val actionSql =
+       """
+         |INSERT INTO APIPRO.EAS_MACHINEDATA_ACTION
+         | (MACHINEID, OCCURTIME, ALARMID, MACHINESTATUS, ALARMTEXT, SERORCLEAR, MESSAGETYPE, UPDATETIME, FACTORY)
+         | VALUES(?,?,?,?,?,?,?,?,?)
+       """.stripMargin
+
+     actionStream.addSink(new JdbcSink[Action](conf, actionSql, new JdbcWriter[Action] {
+       override def accept(stmt: PreparedStatement, data: Action): Unit = {
+         stmt.setString(1, data.machineid)
+         stmt.setString(2, data.occurtime)
+         stmt.setString(3, data.alarmid)
+         stmt.setObject(4, data.machinestatus)
+         stmt.setString(5, data.alarmtext)
+         stmt.setString(6, data.serorclear)
+         stmt.setString(7, data.messagetype)
+         stmt.setString(8, data.updatetime)
+         stmt.setString(9, data.factory)
+       }
+     }))
 
 
   }

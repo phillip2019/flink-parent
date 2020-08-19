@@ -9,6 +9,7 @@ import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Bu
 import com.aikosolar.bigdata.flink.job.conf.DataLoaderConf
 import com.alibaba.fastjson.JSON
 import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.streaming.api.scala._
 import org.apache.log4j.Logger
@@ -95,7 +96,7 @@ object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
             if (eqp.toUpperCase().startsWith("DF") || eqp.toUpperCase().startsWith("PE") || eqp.toUpperCase().startsWith("PR")) {
               for (x <- 1 to 5 if (!"".equals(tubeId))) {
                 val key = s"TubeID$x"
-                val value = Strings.getNotnull(result.getOrDefault(key.toLowerCase(), ""))
+                val value = MapUtils.getString(result, key.toLowerCase(), "")
                 if (status.equals(value)) {
                   tubeId = key
                 }

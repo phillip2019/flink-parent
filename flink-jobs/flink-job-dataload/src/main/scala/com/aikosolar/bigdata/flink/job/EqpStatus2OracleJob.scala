@@ -11,6 +11,7 @@ import com.aikosolar.bigdata.flink.connectors.jdbc.writter.JdbcWriter
 import com.aikosolar.bigdata.flink.job.conf.AllEqpConfig
 import com.alibaba.fastjson.JSON
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.apache.flink.streaming.api.scala._
@@ -78,11 +79,11 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
       .filter(r => Strings.isValidEqpId(r.get("eqpid")))
       .map(m => {
         val eqpid = m.get("eqpid").toString
-        val newstatus = Strings.getNotnull(m.getOrDefault("newstatus", ""))
-        val oldstatus = Strings.getNotnull(m.getOrDefault("oldstatus", ""))
-        val newtime = Strings.getNotnull(m.getOrDefault("newtime", ""))
-        val oldtime = Strings.getNotnull(m.getOrDefault("oldtime", ""))
-        val tubeid = Strings.getNotnull(m.getOrDefault("tubeid", ""))
+        val newstatus = MapUtils.getString(m, "newstatus", "")
+        val oldstatus =MapUtils.getString(m, "oldstatus", "")
+        val newtime = MapUtils.getString(m, "newtime", "")
+        val oldtime =MapUtils.getString(m, "oldtime", "")
+        val tubeid = MapUtils.getString(m, "tubeid", "")
 
         (Hist(eqpid, newstatus, newstatus, oldstatus, newtime, oldtime, null, null, tubeid), Update(eqpid, newstatus, newtime, "false"))
 
@@ -164,10 +165,7 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
     }))
 
 
-    if(!"prod".equals(c.runMode)){
-      histStream.print("histStream")
-      updateStream.print("updateStream")
-    }
+
 
   }
 
