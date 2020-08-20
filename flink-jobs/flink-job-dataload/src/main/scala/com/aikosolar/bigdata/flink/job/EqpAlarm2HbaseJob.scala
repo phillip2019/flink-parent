@@ -5,10 +5,10 @@ import java.util.{HashMap, Map}
 import com.aikosolar.bigdata.flink.common.enums.Sites
 import com.aikosolar.bigdata.flink.common.utils.{Dates, Strings}
 import com.aikosolar.bigdata.flink.connectors.hbase.SimpleHBaseTableSink
+import com.aikosolar.bigdata.flink.connectors.hbase.utils.RowKeyGenerator
 import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
 import com.aikosolar.bigdata.flink.job.conf.DataLoaderConf
 import com.alibaba.fastjson.JSON
-import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.streaming.api.scala._
@@ -76,8 +76,7 @@ object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
         try {
           val site = eqpId.substring(0, 2)
           val factory = Sites.toFactoryId(site)
-          val rawString = eqpId + "|" + putTime
-          val rowKey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+          val rowKey = RowKeyGenerator.gen(eqpId, putTime)
           val rawLongTime: Long = Dates.string2Long(putTime, Dates.fmt2)
           val day_date: String = Dates.long2String(rawLongTime - 8 * 60 * 60 * 1000, Dates.fmt5)
           val status = if (result.get("status") != null) result.get("status").toString else ""
