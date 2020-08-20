@@ -90,7 +90,7 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
           val enumTag = tagService.tag(MapUtils.getString(x, Fileds.TEXT1, ""))
           if (enumTag == null) null else enumTag.toString
         }
-        new Subscription(rowkey,
+         Subscription(rowkey,
           factory,
           site,
           eqpId,
@@ -139,6 +139,7 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
         Puts.addColumn(put, "createTime", data.createTime)
         Puts.addColumn(put, "run_count", data.runCount)
         Puts.addColumn(put, "states", data.states)
+        Puts.addColumn(put, "runcountnext", data.runCountNext)
         put
       }
 
@@ -161,6 +162,7 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
                           createTime: String,
                           runCount: String,
                           states: String,
+                          var runCountNext:String= null,
                           var output_qty: String = "1", // 默认1
                           var endTime: String = null,
                           var step_name: String = null,
@@ -229,6 +231,7 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
           previousSubscription.update(value)
           previous.endTime = value.putTime
           previous.step_name = value.tag
+          previous.runCountNext = value.runCount
           previous.dataType = if (EveStep.valueOf(previous.tag).next(value.eqpType).toString.equals(value.tag)) "Y" else "N"
           previous.ct = (Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2)) / 1000
           out.collect(previous)

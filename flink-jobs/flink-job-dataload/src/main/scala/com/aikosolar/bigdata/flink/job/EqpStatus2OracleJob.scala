@@ -165,7 +165,10 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
     }))
 
 
-
+    if(!"prod".equals(c.runMode)){
+      histStream.print("histStream")
+      updateStream.print("updateStream")
+    }
 
   }
 
