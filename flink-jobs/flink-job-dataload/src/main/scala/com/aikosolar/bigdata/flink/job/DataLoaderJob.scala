@@ -9,6 +9,7 @@ import com.aikosolar.bigdata.flink.connectors.hbase.utils.RowKeyGenerator
 import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
 import com.aikosolar.bigdata.flink.job.conf.DataLoaderConf
 import com.alibaba.fastjson.JSON
+import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.streaming.api.scala._
 import org.apache.log4j.Logger
@@ -64,10 +65,11 @@ object DataLoaderJob extends FLinkKafkaRunner[DataLoaderConf] {
         try {
           val eqpId = result.get("eqpid").toString
           val putTime = result.get("puttime").toString
+          val tubeid=MapUtils.getString(result,"tubeid","")
 
           val site = eqpId.substring(0, 2)
           val factory = Sites.toFactoryId(site)
-          val rowKey = RowKeyGenerator.gen(eqpId, putTime)
+          val rowKey = if("".equals(tubeid)) RowKeyGenerator.gen(eqpId, putTime) else RowKeyGenerator.gen(eqpId, putTime,tubeid)
           val rawLongTime: Long = Dates.string2Long(putTime, Dates.fmt2)
           val day_date: String = Dates.long2String(rawLongTime - 8 * 60 * 60 * 1000, Dates.fmt5)
 

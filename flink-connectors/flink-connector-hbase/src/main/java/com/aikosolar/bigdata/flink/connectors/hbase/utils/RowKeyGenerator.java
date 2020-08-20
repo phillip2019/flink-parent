@@ -17,4 +17,13 @@ public class RowKeyGenerator {
         String randomStr = RandomStringUtils.random(5, true, true);
         return DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString + "|" + randomStr;
     }
+
+
+    public static String gen(String eqpId, String putTime,String tubeid) {
+        String rawString = eqpId + "|" + putTime+ "|" + tubeid;
+        String randomStr = RandomStringUtils.random(5, true, true);
+        return DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString + "|" + randomStr;
+    }
+
+
 }

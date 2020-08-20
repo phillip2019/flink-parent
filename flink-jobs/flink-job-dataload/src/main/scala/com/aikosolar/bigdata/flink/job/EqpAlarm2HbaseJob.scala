@@ -73,15 +73,15 @@ object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
       .map(result => {
         val eqpId = result.get("eqpid").toString.trim
         val putTime = result.get("puttime").toString.trim
+
         try {
           val site = eqpId.substring(0, 2)
           val factory = Sites.toFactoryId(site)
-          val rowKey = RowKeyGenerator.gen(eqpId, putTime)
           val rawLongTime: Long = Dates.string2Long(putTime, Dates.fmt2)
           val day_date: String = Dates.long2String(rawLongTime - 8 * 60 * 60 * 1000, Dates.fmt5)
           val status = if (result.get("status") != null) result.get("status").toString else ""
 
-          result.putIfAbsent("row_key", rowKey)
+
           result.putIfAbsent("site", site)
           result.putIfAbsent("factory", factory)
           result.putIfAbsent("day_date", day_date)
@@ -103,6 +103,10 @@ object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
             }
           }
 
+
+          val rowKey = if("".equals(tubeId)) RowKeyGenerator.gen(eqpId, putTime) else RowKeyGenerator.gen(eqpId, putTime,tubeId)
+
+          result.putIfAbsent("row_key", rowKey)
           result.putIfAbsent("tubeid", tubeId)
 
           result.remove("tubeid1")
