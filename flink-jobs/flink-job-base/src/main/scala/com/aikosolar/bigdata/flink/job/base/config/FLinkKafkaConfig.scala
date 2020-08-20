@@ -24,7 +24,7 @@ class FLinkKafkaConfig extends FinkBaseConfig {
   var topicRegex: Boolean = false
 
   @Option(names = Array("--reset.strategy"), required = false, description = Array("kafka消费重置策略(不区分大小写):none(默认)|earliest|latest|GroupOffsets"))
-  var resetStrategy: String = "NONE"
+  var resetStrategy: String = "GroupOffsets" // NONE
 
   @Option(names = Array("-kc", "--kafka.config"), required = false, description = Array("kafka其他参数"))
   var kafkaConf: Map[String, String] = new util.LinkedHashMap[String, String]()
