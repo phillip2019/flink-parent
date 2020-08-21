@@ -23,7 +23,7 @@ import org.apache.log4j.Logger
   * --bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
   * --topic=data-collection-gp
   * --group.id=gp_data_loader
-  * --bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
+  * --target.bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
   * --target.topic=data-collection-gp-subscription
   * --checkpointDataUri=hdfs://172.16.98.85:8020/flink-checkpoint
   * --gp1.hbase.table=ods:ods_f_eqp_gp_mtlevtdata
