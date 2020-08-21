@@ -115,7 +115,7 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
       """
         |INSERT INTO APIPRO.EAS_EQUIPMENT_STATUS_HIST
         | (NAME, STATUSCODENAME, NEWSTATUSNAME, OLDSTATUSNAME, LASTSTATUSDATE, OLDSTATUSDATE, USETIME, UPDATETIME, TUBEID)
-        | VALUES(?,?,?,?,?,?,?,?,?)
+        | VALUES(?,?,?,?,?,?,?,SYSDATE,?)
       """.stripMargin
 
     histStream.addSink(new JdbcSink[Hist](conf, histSql, new JdbcWriter[Hist] {
@@ -131,8 +131,7 @@ object EqpStatus2OracleJob extends FLinkKafkaRunner[AllEqpConfig] {
         stmt.setTimestamp(5, new Timestamp(formatter.parse(data.laststatusdate).getTime))
         stmt.setTimestamp(6, new Timestamp(formatter.parse(data.oldstatusdate).getTime))
         stmt.setObject(7, null) //todo 确认
-        stmt.setObject(8, null)
-        stmt.setString(9,data.tubeid)
+        stmt.setString(8,data.tubeid)
       }
     }))
 
