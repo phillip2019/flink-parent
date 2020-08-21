@@ -53,7 +53,7 @@ public class GPUtils {
                 JSONObject MtlEvt = eqState.getJSONObject("MtlEvt");
                 if (MtlEvt != null) {
                     String name = MtlEvt.getString("@Name");
-                    map.put("name", name);
+                    map.put("Name", name);
                     JSONObject MtlList = MtlEvt.getJSONObject("MtlList");
                     if (MtlList != null) {
                         JSONObject Mtl = MtlList.getJSONObject("Mtl");
