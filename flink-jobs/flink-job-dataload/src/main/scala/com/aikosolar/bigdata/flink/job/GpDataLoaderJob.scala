@@ -19,15 +19,15 @@ import org.apache.log4j.Logger
 
 /**
   * --job-name=GpDataLoaderJob
-  * --time-characteristic=EventTime
-  * --bootstrap.servers=kafka1:9092,kafka2:9092,kafka3:9092
-  * --topic=t1
-  * --group.id=g1
-  * --target.bootstrap.servers=kafka1:9092,kafka2:9092,kafka3:9092
-  * --target.topic=t2
+  * --time-characteristic=ProcessingTime
+  * --bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
+  * --topic=data-collection-gp
+  * --group.id=gp_data_loader
+  * --bootstrap.servers=172.16.111.21:9092,172.16.111.22:9092,172.16.111.20:9092
+  * --target.topic=data-collection-gp-subscription
   * --checkpointDataUri=hdfs://172.16.98.85:8020/flink-checkpoint
-  * --gp1.hbase.table=xxx1
-  * --gp2.hbase.table=xxx2
+  * --gp1.hbase.table=ods:ods_f_eqp_gp_eqstate
+  * --gp2.hbase.table=ods:ods_f_eqp_gp_mtlevtdata
   *
   * @author carlc
   */
