@@ -85,7 +85,7 @@ public class GPUtils {
                     String Come = getString(eq, "$.States.State.\\@Come", null);
                     map.put("EquipmentID", equipmentID);
                     map.put("EqId", EqId);
-                    map.put("Id", Id);
+                    map.put("StateId", Id);
                     map.put("Come", Come);
                 }
             }
