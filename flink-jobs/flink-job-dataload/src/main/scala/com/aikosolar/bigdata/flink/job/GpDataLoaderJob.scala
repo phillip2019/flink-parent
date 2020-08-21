@@ -54,8 +54,11 @@ object GpDataLoaderJob extends FLinkKafkaRunner[GpDataLoaderConf] {
           }
         }
       })
-    mapStream.print("GP1")
-    mapStream.getSideOutput(new OutputTag[Map[String, String]]("GP2")).print("GP2")
+
+    if (!"prod".equalsIgnoreCase(c.runMode)) {
+      mapStream.print("GP1")
+      mapStream.getSideOutput(new OutputTag[Map[String, String]]("GP2")).print("GP2")
+    }
 
     // --------------------------- GP1 ---------------------------
     mapStream.map(x => JSON.toJSONString(x)).addSink(new FlinkKafkaProducer010[String](c.targetBootstrapServers, c.targetTopic, new SimpleStringSchema()))
