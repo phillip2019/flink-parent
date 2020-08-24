@@ -12,7 +12,7 @@ import com.aikosolar.bigdata.flink.connectors.hbase.utils.Puts
 import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
 import com.aikosolar.bigdata.flink.connectors.hbase.{HBaseOperation, HBaseSink}
 import com.aikosolar.bigdata.flink.job.conf.EveConfig
-import com.aikosolar.bigdata.flink.job.constants.Fileds
+import com.aikosolar.bigdata.flink.job.constants.Fields
 import com.aikosolar.bigdata.flink.job.enums.EveStep
 import com.alibaba.fastjson.JSON
 import org.apache.commons.codec.digest.DigestUtils
@@ -74,7 +74,7 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
       .map(x => {
         val eqpId: String = MapUtils.getString(x, "eqpid", "")
         val tubeId: String = MapUtils.getString(x, "tubeid", "")
-        val states: String = MapUtils.getString(x, Fileds.STATES, "")
+        val states: String = MapUtils.getString(x, Fields.STATES, "")
         val putTime: String = MapUtils.getString(x, "puttime", "")
         val runCount: String = MapUtils.getString(x, "runcount", "")
         val eqpType = StringUtils.removePattern(eqpId.split("-")(1), "\\d+")
@@ -89,7 +89,7 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
         val createTime = Dates.now(Dates.fmt2)
         val tagService = EveTagServiceFactory.getEveTagService(eqpType)
         val tag = if (tagService == null) null else {
-          val enumTag = tagService.tag(MapUtils.getString(x, Fileds.TEXT1, ""))
+          val enumTag = tagService.tag(MapUtils.getString(x, Fields.TEXT1, ""))
           if (enumTag == null) null else enumTag.toString
         }
          Subscription(rowkey,
