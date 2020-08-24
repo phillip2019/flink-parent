@@ -61,7 +61,7 @@ object GpDataLoaderJob extends FLinkKafkaRunner[GpDataLoaderConf] {
     }
 
     // --------------------------- GP1 ---------------------------
-    mapStream.map(x => JSON.toJSONString(x)).addSink(new FlinkKafkaProducer010[String](c.targetBootstrapServers, c.targetTopic, new SimpleStringSchema()))
+    mapStream.map(x => JSON.toJSONString(x,false)).addSink(new FlinkKafkaProducer010[String](c.targetBootstrapServers, c.targetTopic, new SimpleStringSchema()))
     mapStream.map(x => {
       x.put("row_key", RowKeyGenerator.gen(x.get("EquipmentID").toString, x.get("Come").toString))
       x
