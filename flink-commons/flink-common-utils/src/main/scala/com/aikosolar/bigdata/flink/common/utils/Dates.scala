@@ -47,14 +47,14 @@ object Dates {
   }
 
   /**
-    * 日期转换为班次字符串
+    *
     */
   def getWeek(date: String, fmt: DateTimeFormatter): String = {
     import java.time.DayOfWeek
     import java.time.temporal.WeekFields
-    val wfs = WeekFields.of(DayOfWeek.MONDAY,1)
-    val d = LocalDate.parse(date,fmt)
-    d.get(wfs.weekOfWeekBasedYear()) + ""
+    val wfs = WeekFields.of(DayOfWeek.MONDAY, 1)
+    val d = LocalDate.parse(date, fmt)
+    "%02d".format(d.get(wfs.weekOfWeekBasedYear()))
   }
 
   /**
@@ -73,19 +73,19 @@ object Dates {
   }
 
   def main(args: Array[String]): Unit = {
-    println(getWeek("2020-01-01",fmt5))
-    println(getWeek("2020-01-02",fmt5))
-    println(getWeek("2020-01-03",fmt5))
-    println(getWeek("2020-01-04",fmt5))
+    println(getWeek("2020-01-01", fmt5))
+    println(getWeek("2020-01-02", fmt5))
+    println(getWeek("2020-01-03", fmt5))
+    println(getWeek("2020-01-04", fmt5))
     // --------------------------------
-    println(getWeek("2020-01-05",fmt5))
-    println(getWeek("2020-01-06",fmt5))
-    println(getWeek("2020-01-07",fmt5))
-    println(getWeek("2020-01-08",fmt5))
-    println(getWeek("2020-01-09",fmt5))
-    println(getWeek("2020-01-10",fmt5))
-    println(getWeek("2020-01-11",fmt5))
-    println(getWeek("2020-01-12",fmt5))
-    println(getWeek("2020-01-13",fmt5))
+    println(getWeek("2020-01-05", fmt5))
+    println(getWeek("2020-01-06", fmt5))
+    println(getWeek("2020-01-07", fmt5))
+    println(getWeek("2020-01-08", fmt5))
+    println(getWeek("2020-01-09", fmt5))
+    println(getWeek("2020-01-10", fmt5))
+    println(getWeek("2020-01-11", fmt5))
+    println(getWeek("2020-01-12", fmt5))
+    println(getWeek("2020-01-13", fmt5))
   }
 }
