@@ -1,7 +1,7 @@
 package com.aikosolar.bigdata.flink.common.utils
 
 import java.time.format.DateTimeFormatter
-import java.time.{Instant, LocalDateTime, ZoneOffset}
+import java.time.{Instant, LocalDate, LocalDateTime, ZoneOffset}
 import java.util.Locale
 
 import com.aikosolar.bigdata.flink.common.enums.Sites
@@ -49,6 +49,17 @@ object Dates {
   /**
     * 日期转换为班次字符串
     */
+  def getWeek(date: String, fmt: DateTimeFormatter): String = {
+    import java.time.DayOfWeek
+    import java.time.temporal.WeekFields
+    val wfs = WeekFields.of(DayOfWeek.MONDAY,1)
+    val d = LocalDate.parse(date,fmt)
+    d.get(wfs.weekOfWeekBasedYear()) + ""
+  }
+
+  /**
+    * 日期转换为班次字符串
+    */
   def toSwitchShiftTime(date: String, fmt: DateTimeFormatter, site: String): Long = {
     val s = Sites.toSite(site)
     if (s != null) {
@@ -59,5 +70,22 @@ object Dates {
         -1L
       }
     } else -1L
+  }
+
+  def main(args: Array[String]): Unit = {
+    println(getWeek("2020-01-01",fmt5))
+    println(getWeek("2020-01-02",fmt5))
+    println(getWeek("2020-01-03",fmt5))
+    println(getWeek("2020-01-04",fmt5))
+    // --------------------------------
+    println(getWeek("2020-01-05",fmt5))
+    println(getWeek("2020-01-06",fmt5))
+    println(getWeek("2020-01-07",fmt5))
+    println(getWeek("2020-01-08",fmt5))
+    println(getWeek("2020-01-09",fmt5))
+    println(getWeek("2020-01-10",fmt5))
+    println(getWeek("2020-01-11",fmt5))
+    println(getWeek("2020-01-12",fmt5))
+    println(getWeek("2020-01-13",fmt5))
   }
 }
