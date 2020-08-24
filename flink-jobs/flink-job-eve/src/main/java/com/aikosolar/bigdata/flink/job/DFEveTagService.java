@@ -22,7 +22,7 @@ public class DFEveTagService implements EveTagService {
         if ("1st POCl3-deposition".equalsIgnoreCase(text.trim())) {
             return EveStep.PROCESS;
         }
-        if ("Check Bubbler back to atmo pressure".equalsIgnoreCase(text.trim())) {
+        if ("cool down + purge".equalsIgnoreCase(text.trim())) {
             return EveStep.CLEAN;
         }
         if ("Unloading supervision".equalsIgnoreCase(text.trim())) {
@@ -31,25 +31,6 @@ public class DFEveTagService implements EveTagService {
         if ("recipe end".equalsIgnoreCase(text.trim())) {
             return EveStep.CHANGE;
         }
-
-      /*  if ("process started".equalsIgnoreCase(text.trim())) {
-            return EveStep.LOAD;
-        }
-        if ("pump down".equalsIgnoreCase(text.trim())) {
-            return EveStep.CONDITION;
-        }
-        if ("1st POCl3-deposition".equalsIgnoreCase(text.trim())) {
-            return EveStep.PROCESS;
-        }
-        if ("Check Bubbler back to atmo pressure".equalsIgnoreCase(text.trim())) {
-            return EveStep.CLEAN;
-        }
-        if ("backfill".equalsIgnoreCase(text.trim())) {
-            return EveStep.UNLOAD;
-        }
-        if ("recipe end".equalsIgnoreCase(text.trim())) {
-            return EveStep.CHANGE;
-        }*/
         return null;
     }
 
