@@ -79,7 +79,9 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
         val runCount: String = MapUtils.getString(x, "runcount", "")
         val eqpType = StringUtils.removePattern(eqpId.split("-")(1), "\\d+")
         val rawString = eqpId + "|" + putTime
-        val rowkey = DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+        val rowkey = if("".equals(tubeId.trim)) DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+        else DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString + "|" +tubeId
+
         val site = eqpId.substring(0, 2)
         val factory = Sites.toFactoryId(site)
         val shift = Dates.toShift(putTime, Dates.fmt2, site)

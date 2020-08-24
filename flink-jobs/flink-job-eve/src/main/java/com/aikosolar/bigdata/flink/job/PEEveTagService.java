@@ -14,27 +14,32 @@ public class PEEveTagService implements EveTagService {
         if (StringUtils.isBlank(text)) {
             return null;
         }
-        if ("Recipe started".equalsIgnoreCase(text.trim())) {
+        if ("process started".equalsIgnoreCase(text.trim())) {
             return EveStep.LOAD;
         }
-        if ("Input: Define manually rework: <N/Y> N Recipe: /PROCESS/V1PDV101;6".equalsIgnoreCase(text.trim())) {
+        if ("Loading done".equalsIgnoreCase(text.trim())) {
             return EveStep.CONDITION;
         }
-        if ("Memory Text1 deposition".equalsIgnoreCase(text.trim())) {
+        if ("Memory Text1 prepare deposition Layer 1".equalsIgnoreCase(text.trim())) {
             return EveStep.PROCESS;
         }
-        if ("Memory Text2 Evacuate tube and pressure test".equalsIgnoreCase(text.trim())) {
+        if ("Evacuate Tube and MFCs".equalsIgnoreCase(text.trim())) {
             return EveStep.CLEAN;
         }
-        if ("Memory Text1 unload".equalsIgnoreCase(text.trim())) {
+        if ("Fill tube with N2".equalsIgnoreCase(text.trim())) {
             return EveStep.UNLOAD;
         }
-        if (text.trim().contains("Recipe End Recipe:")) {
+        if (text.trim().contains("end of process")) {
             return EveStep.CHANGE;
         }
         return null;
     }
-
+/*process started
+Loading done
+Memory Text1 prepare deposition Layer 1
+Evacuate Tube and MFCs
+Fill tube with N2
+end of process*/
     private PEEveTagService() {
     }
 

@@ -14,26 +14,27 @@ public class PREveTagService implements EveTagService {
         if (StringUtils.isBlank(text)) {
             return null;
         }
-        if ("Recipe started".equalsIgnoreCase(text.trim())) {
+        if ("process started".equalsIgnoreCase(text.trim())) {
             return EveStep.LOAD;
         }
-        if ("Memory Text1 Increase pressure for temp. stabilization".equalsIgnoreCase(text.trim())) {
+        if ("Loading done".equalsIgnoreCase(text.trim())) {
             return EveStep.CONDITION;
         }
-        if ("Switch to local scrubber exhaust.".equalsIgnoreCase(text.trim())) {
+        if ("prepare Alox deposition".equalsIgnoreCase(text.trim())) {
             return EveStep.PROCESS;
         }
-        if ("Memory Text1 Evacuate Tube and MFCs".equalsIgnoreCase(text.trim())) {
+        if ("Evacuate Tube and MFCs".equalsIgnoreCase(text.trim())) {
             return EveStep.CLEAN;
         }
-        if ("Memory Text1 Fill tube with N2".equalsIgnoreCase(text.trim())) {
+        if ("Fill tube with N2".equalsIgnoreCase(text.trim())) {
             return EveStep.UNLOAD;
         }
-        if (text.trim().contains("Recipe End Recipe:")) {
+        if (("end of process").equals(text.trim())) {
             return EveStep.CHANGE;
         }
         return null;
     }
+
 
     private PREveTagService() {
     }
