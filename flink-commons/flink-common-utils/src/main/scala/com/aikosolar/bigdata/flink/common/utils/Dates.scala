@@ -45,4 +45,19 @@ object Dates {
     val x = toShift(date, fmt, site)
     if (x == null) x else x.substring(x.length - 1)
   }
+
+  /**
+    * 日期转换为班次字符串
+    */
+  def toSwitchShiftTime(date: String, fmt: DateTimeFormatter, site: String): Long = {
+    val s = Sites.toSite(site)
+    if (s != null) {
+      val x = s.toSwitchShiftTime(LocalDateTime.parse(date, fmt))
+      if (x != null) {
+        string2Long(x, fmt2)
+      } else {
+        null
+      }
+    } else null
+  }
 }

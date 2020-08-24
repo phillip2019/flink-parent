@@ -10,6 +10,7 @@ import java.util.Locale;
  *
  * @author carlc
  */
+@SuppressWarnings("all")
 public enum Sites {
 
     /**
@@ -90,6 +91,37 @@ public enum Sites {
             return l.toLocalDate().minusDays(hour < 7 ? 1 : 0).format(fmt) + "-N";
         }
 
+        @Override
+        public String toSwitchShiftTime(LocalDateTime l) {
+            int hour = l.getHour();
+            int minute = l.getMinute();
+
+            // 7点边界条件
+            if (hour == 7) {
+                if (minute >= 30) {
+                    // 2020-08-22 07:01:00
+                    return l.toLocalDate().format(fmt) + " 19:30:00";
+                } else {
+                    // 2020-08-22 06:59:59
+                    return l.toLocalDate().minusDays(1).format(fmt) + " 07:30:00";
+                }
+            }
+            // 19点边界条件
+            if (hour == 19) {
+                // 2020-08-22 19:29:00
+                // 2020-08-22 19:31:00
+                if (minute >= 30) {
+                    return l.toLocalDate().plusDays(1).format(fmt) + " 07:30:00";
+                } else {
+                    return l.toLocalDate().format(fmt) + " 19:30:00";
+                }
+            }
+            // 其他
+            if (hour > 7 && hour < 19) {
+                return l.toLocalDate().format(fmt) + " 19:30:00";
+            }
+            return l.toLocalDate().plusDays(hour < 7 ? 1 : 0).format(fmt) + " 07:30:00";
+        }
     },
     ;
 
@@ -110,6 +142,20 @@ public enum Sites {
             return l.toLocalDate().minusDays(1).format(fmt) + "-N";
         } else {
             return l.toLocalDate().format(fmt) + "-N";
+        }
+    }
+
+    /**
+     * 获取换班时间点
+     */
+    public String toSwitchShiftTime(LocalDateTime l) {
+        int h = l.getHour();
+        if (h >= 8 && (h < 20)) {
+            return l.toLocalDate().format(fmt) + " 20:00:00";
+        } else if (h < 8) {
+            return l.toLocalDate().format(fmt) + " 08:00:00";
+        } else {
+            return l.toLocalDate().plusDays(1).format(fmt) + " 08:00:00";
         }
     }
 
@@ -134,5 +180,17 @@ public enum Sites {
             return null;
         }
         return Arrays.stream(Sites.values()).filter(s -> s.accept(site)).findFirst().orElse(null);
+    }
+
+    public static void main(String[] args) {
+        DateTimeFormatter fmt2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.CHINA);
+        System.out.println("---------------- 广东(07:30 - 19:30) ----------------");
+        for (String dt : Arrays.asList("2020-08-22 07:29:59", "2020-08-22 07:30:00", "2020-08-22 19:29:59", "2020-08-22 19:30:00")) {
+            System.out.println(dt + " 换班时间: " + GD.toSwitchShiftTime(LocalDateTime.parse(dt, fmt2)));
+        }
+        System.out.println("---------------- 浙江(08:00 - 20:00) ----------------");
+        for (String dt : Arrays.asList("2020-08-22 07:59:59", "2020-08-21 08:00:00", "2020-08-22 19:59:59", "2020-08-21 20:00:00")) {
+            System.out.println(dt + " 换班时间: " + ZJ.toSwitchShiftTime(LocalDateTime.parse(dt, fmt2)));
+        }
     }
 }

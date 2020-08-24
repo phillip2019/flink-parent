@@ -1,12 +1,9 @@
 package com.aikosolar.bigdata.flink.job
 
-import java.sql.{Connection, PreparedStatement, ResultSet}
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 import java.util.{HashMap, Map}
 
 import com.aikosolar.bigdata.flink.common.enums.Sites
-import com.aikosolar.bigdata.flink.common.utils.{Dates, IOUtils, Strings}
+import com.aikosolar.bigdata.flink.common.utils.{Dates, Strings}
 import com.aikosolar.bigdata.flink.connectors.hbase.mapper.HBaseMutationConverter
 import com.aikosolar.bigdata.flink.connectors.hbase.utils.Puts
 import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
@@ -18,15 +15,12 @@ import com.alibaba.fastjson.JSON
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
-import org.apache.flink.api.common.functions.RichMapFunction
 import org.apache.flink.api.common.state.ValueStateDescriptor
-import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.util.Collector
 import org.apache.hadoop.hbase.client.{Delete, Put}
 import org.apache.hadoop.hbase.util.Bytes
-import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
 
@@ -57,6 +51,16 @@ import scala.collection.JavaConversions._
   */
 object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
 
+
+  /**
+    * 配置校验
+    */
+  override def validate(c: EveConfig): Unit = {
+    if(c.topicRegex || c.topic.contains(",")){
+      throw new UnsupportedOperationException("当前任务不支持批量topic")
+    }
+  }
+
   /**
     * 业务方法[不需自己调用env.execute()]
     */
@@ -79,8 +83,8 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
         val runCount: String = MapUtils.getString(x, "runcount", "")
         val eqpType = StringUtils.removePattern(eqpId.split("-")(1), "\\d+")
         val rawString = eqpId + "|" + putTime
-        val rowkey = if("".equals(tubeId.trim)) DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
-        else DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString + "|" +tubeId
+        val rowkey = if ("".equals(tubeId.trim)) DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString
+        else DigestUtils.md5Hex(rawString).substring(0, 2) + "|" + rawString + "|" + tubeId
 
         val site = eqpId.substring(0, 2)
         val factory = Sites.toFactoryId(site)
@@ -92,7 +96,7 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
           val enumTag = tagService.tag(MapUtils.getString(x, Fields.TEXT1, ""))
           if (enumTag == null) null else enumTag.toString
         }
-         Subscription(rowkey,
+        Subscription(rowkey,
           factory,
           site,
           eqpId,
@@ -133,7 +137,6 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
         Puts.addColumn(put, "createTime", data.createTime)
         Puts.addColumn(put, "run_count", data.runCount)
         Puts.addColumn(put, "states", data.states)
-        Puts.addColumn(put, "runcountnext", data.runCountNext)
         put
       }
 
@@ -156,7 +159,6 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
                           createTime: String,
                           runCount: String,
                           states: String,
-                          var runCountNext:String= null,
                           var endTime: String = null,
                           var step_name: String = null,
                           var dataType: String = null,
@@ -169,7 +171,15 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
   class EveFunction extends KeyedProcessFunction[(String, String), Subscription, Subscription] {
     lazy val previousSubscription = getRuntimeContext.getState(new ValueStateDescriptor[Subscription]("previous", classOf[Subscription]))
 
+    lazy val shiftTimer = getRuntimeContext.getState(new ValueStateDescriptor[Long]("Shift-Timer", classOf[Long]))
+
     override def processElement(value: Subscription, ctx: KeyedProcessFunction[(String, String), Subscription, Subscription]#Context, out: Collector[Subscription]): Unit = {
+      val timer = Dates.toSwitchShiftTime(value.putTime, Dates.fmt2, value.site)
+      if (shiftTimer.value() == null || timer != shiftTimer.value()) {
+        shiftTimer.update(timer)
+        ctx.timerService().registerEventTimeTimer(timer)
+      }
+
       val previous = previousSubscription.value()
       if (previous != null) {
         if (previous.tag.equals(value.tag)) { // 如果2条数据的tag相同，且当前数据时间 > 前数据时间 => 状态更新为当前数据
@@ -188,7 +198,6 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
           previousSubscription.update(value)
           previous.endTime = value.putTime
           previous.step_name = value.tag
-          previous.runCountNext = value.runCount
           previous.dataType = if (EveStep.valueOf(previous.tag).next(value.eqpType).toString.equals(value.tag)) "Y" else "N"
           previous.ct = (Dates.string2Long(value.putTime, Dates.fmt2) - Dates.string2Long(previous.putTime, Dates.fmt2)) / 1000
           out.collect(previous)
@@ -197,5 +206,22 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
         previousSubscription.update(value)
       }
     }
+
+    override def onTimer(timestamp: Long, ctx: KeyedProcessFunction[(String, String), Subscription, Subscription]#OnTimerContext, out: Collector[Subscription]): Unit = {
+      val previous = previousSubscription.value()
+      val timer = shiftTimer.value()
+      if (previous != null && timestamp == timer) {
+        previous.endTime = Dates.long2String(timer, Dates.fmt2)
+        previous.step_name = EveStep.valueOf(previous.tag).next(previous.site).toString
+        previous.dataType = "Y"
+        previous.ct = (timer - Dates.string2Long(previous.putTime, Dates.fmt2)) / 1000
+        out.collect(previous)
+
+        // 注册下一个定时器
+        ctx.timerService().deleteEventTimeTimer(timer)
+        ctx.timerService().registerEventTimeTimer(Dates.toSwitchShiftTime(Dates.long2String(timer + 1000L/*加1000L是为了获取下一个换班时间点*/, Dates.fmt2), Dates.fmt2, previous.site))
+      }
+    }
   }
+
 }
