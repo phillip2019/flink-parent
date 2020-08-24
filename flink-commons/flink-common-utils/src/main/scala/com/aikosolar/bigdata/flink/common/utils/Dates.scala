@@ -37,4 +37,12 @@ object Dates {
     val s = Sites.toSite(site)
     if (s != null) s.toShift(LocalDateTime.parse(date, fmt)) else null
   }
+
+  /**
+    * 日期转换为班次字符串
+    */
+  def toShiftChar(date: String, fmt: DateTimeFormatter, site: String): String = {
+    val x = toShift(date, fmt, site)
+    if (x == null) x else x.substring(x.length - 1)
+  }
 }
