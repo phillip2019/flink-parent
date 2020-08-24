@@ -88,9 +88,12 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
 
         val site = eqpId.substring(0, 2)
         val factory = Sites.toFactoryId(site)
-        val shift = Dates.toShift(putTime, Dates.fmt2, site)
+        val shift = Dates.toShiftChar(putTime, Dates.fmt2, site)
         val day_date = Dates.long2String(Dates.string2Long(putTime, Dates.fmt2) - 8 * 60 * 60 * 1000, Dates.fmt5)
         val createTime = Dates.now(Dates.fmt2)
+        val year="Y"+day_date.substring(0,4)
+        val month="M"+day_date.substring(5,7)
+        val week=""
         val tagService = EveTagServiceFactory.getEveTagService(eqpType)
         val tag = if (tagService == null) null else {
           val enumTag = tagService.tag(MapUtils.getString(x, Fields.TEXT1, ""))
@@ -103,6 +106,9 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
           eqpType,
           day_date,
           shift,
+          year,
+          month,
+          week,
           putTime,
           tubeId,
           tag,
@@ -153,6 +159,9 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
                           eqpType: String,
                           dayDate: String,
                           shift: String,
+                          year:String,
+                          month:String,
+                          week:String,
                           putTime: String,
                           tubeId: String,
                           tag: String,
