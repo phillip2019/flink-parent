@@ -8,7 +8,7 @@ import com.aikosolar.bigdata.flink.connectors.hbase.mapper.HBaseMutationConverte
 import com.aikosolar.bigdata.flink.connectors.hbase.utils.Puts
 import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
 import com.aikosolar.bigdata.flink.connectors.hbase.{HBaseOperation, HBaseSink}
-import com.aikosolar.bigdata.flink.job.conf.EveConfig
+import com.aikosolar.bigdata.flink.job.conf.EveV2Config
 import com.aikosolar.bigdata.flink.job.constants.Fields
 import com.aikosolar.bigdata.flink.job.enums.EveStep
 import com.alibaba.fastjson.JSON
@@ -16,8 +16,10 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.flink.api.common.state.ValueStateDescriptor
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction
+import org.apache.flink.streaming.api.TimeCharacteristic
+import org.apache.flink.streaming.api.functions.{AssignerWithPunctuatedWatermarks, KeyedProcessFunction}
 import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.util.Collector
 import org.apache.hadoop.hbase.client.{Delete, Put}
 import org.apache.hadoop.hbase.util.Bytes
@@ -37,10 +39,6 @@ import scala.collection.JavaConversions._
   * --is.topic.regex=true
   * --reset.strategy=earliest
   * --hbase.table=ods:ods_f_test_to_dai //todo 修改表名称
-  * --mysql.url=jdbc:mysql://172.16.98.88:3306/test?useSSL=false&useUnicode=true&characterEncoding=UTF-8
-  * --mysql.username=root
-  * --mysql.password=123456
-  * --mysql.sql="select * from eve_st_settings"
   * ----------------------字段映射----------------------
   * -f=currstep=_text1_
   * -f=text1=_text1_
@@ -49,13 +47,21 @@ import scala.collection.JavaConversions._
   *
   * @author carlc
   */
-object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
+object EveJobV2 extends FLinkKafkaRunner[EveV2Config] {
 
+
+  /**
+    * 构建/初始化 env
+    */
+  override def setupEnv(env: StreamExecutionEnvironment, c: EveV2Config): Unit = {
+    super.setupEnv(env,c)
+    env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+  }
 
   /**
     * 配置校验
     */
-  override def validate(c: EveConfig): Unit = {
+  override def validate(c: EveV2Config): Unit = {
     if(c.topicRegex || c.topic.contains(",")){
       throw new UnsupportedOperationException("当前任务不支持批量topic")
     }
@@ -64,7 +70,7 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
   /**
     * 业务方法[不需自己调用env.execute()]
     */
-  override def run0(env: StreamExecutionEnvironment, c: EveConfig, rawKafkaSource: DataStream[String]): Unit = {
+  override def run0(env: StreamExecutionEnvironment, c: EveV2Config, rawKafkaSource: DataStream[String]): Unit = {
     val dateStream: DataStream[Subscription] = rawKafkaSource
       .map(JSON.parseObject(_))
       .map(jsonObj => {
@@ -117,6 +123,19 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
           states)
       })
       .filter(_.tag != null)
+      .assignTimestampsAndWatermarks(new AssignerWithPunctuatedWatermarks[Subscription] {
+        private val MAX_LATENESS: Long = 2 * 60 * 1000
+        private var CURRENT_TS = Long.MinValue
+        override def checkAndGetNextWatermark(lastElement: Subscription, extractedTimestamp: Long): Watermark = {
+          val ts = CURRENT_TS - MAX_LATENESS
+          new Watermark(ts)
+        }
+        override def extractTimestamp(element: Subscription, previousElementTimestamp: Long): Long = try {
+          val current = Dates.string2Long(element.putTime,Dates.fmt2)
+          CURRENT_TS = CURRENT_TS.max(current)
+          current
+        }
+      })
       .keyBy(x => (x.eqpId, x.tubeId))
       .process(new EveFunction())
 
@@ -184,7 +203,7 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
 
     override def processElement(value: Subscription, ctx: KeyedProcessFunction[(String, String), Subscription, Subscription]#Context, out: Collector[Subscription]): Unit = {
       val timer = Dates.toSwitchShiftTime(value.putTime, Dates.fmt2, value.site)
-      if (shiftTimer.value() == null || timer != shiftTimer.value()) {
+      if (timer != -1L && (shiftTimer.value() == null || timer != shiftTimer.value())) {
         shiftTimer.update(timer)
         ctx.timerService().registerEventTimeTimer(timer)
       }
