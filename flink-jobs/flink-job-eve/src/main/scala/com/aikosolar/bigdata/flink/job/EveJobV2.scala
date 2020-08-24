@@ -15,9 +15,12 @@ import com.alibaba.fastjson.JSON
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang3.time.DateUtils
 import org.apache.flink.api.common.state.ValueStateDescriptor
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction
+import org.apache.flink.streaming.api.TimeCharacteristic
+import org.apache.flink.streaming.api.functions.{AssignerWithPunctuatedWatermarks, KeyedProcessFunction}
 import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.api.watermark.Watermark
 import org.apache.flink.util.Collector
 import org.apache.hadoop.hbase.client.{Delete, Put}
 import org.apache.hadoop.hbase.util.Bytes
@@ -51,6 +54,14 @@ import scala.collection.JavaConversions._
   */
 object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
 
+
+  /**
+    * 构建/初始化 env
+    */
+  override def setupEnv(env: StreamExecutionEnvironment, c: EveConfig): Unit = {
+    super.setupEnv(env,c)
+    env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+  }
 
   /**
     * 配置校验
@@ -111,6 +122,19 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
           states)
       })
       .filter(_.tag != null)
+      .assignTimestampsAndWatermarks(new AssignerWithPunctuatedWatermarks[Subscription] {
+        private val MAX_LATENESS: Long = 2 * 60 * 1000
+        private var CURRENT_TS = Long.MinValue
+        override def checkAndGetNextWatermark(lastElement: Subscription, extractedTimestamp: Long): Watermark = {
+          val ts = CURRENT_TS - MAX_LATENESS
+          new Watermark(ts)
+        }
+        override def extractTimestamp(element: Subscription, previousElementTimestamp: Long): Long = try {
+          val current = Dates.string2Long(element.putTime,Dates.fmt2)
+          CURRENT_TS = CURRENT_TS.max(current)
+          current
+        }
+      })
       .keyBy(x => (x.eqpId, x.tubeId))
       .process(new EveFunction())
 
@@ -175,7 +199,7 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
 
     override def processElement(value: Subscription, ctx: KeyedProcessFunction[(String, String), Subscription, Subscription]#Context, out: Collector[Subscription]): Unit = {
       val timer = Dates.toSwitchShiftTime(value.putTime, Dates.fmt2, value.site)
-      if (shiftTimer.value() == null || timer != shiftTimer.value()) {
+      if (timer != -1L && (shiftTimer.value() == null || timer != shiftTimer.value())) {
         shiftTimer.update(timer)
         ctx.timerService().registerEventTimeTimer(timer)
       }

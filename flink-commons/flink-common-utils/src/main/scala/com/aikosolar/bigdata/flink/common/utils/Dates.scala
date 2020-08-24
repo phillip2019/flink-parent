@@ -56,8 +56,8 @@ object Dates {
       if (x != null) {
         string2Long(x, fmt2)
       } else {
-        null
+        -1L
       }
-    } else null
+    } else -1L
   }
 }
