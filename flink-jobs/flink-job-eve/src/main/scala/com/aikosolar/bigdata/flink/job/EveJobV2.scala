@@ -99,7 +99,7 @@ object EveJobV2 extends FLinkKafkaRunner[EveV2Config] {
         val createTime = Dates.now(Dates.fmt2)
         val year="Y"+day_date.substring(0,4)
         val month="M"+day_date.substring(5,7)
-        val week=Dates.getWeek(day_date,Dates.fmt5)
+        val week="W"+Dates.getWeek(day_date,Dates.fmt5)
         val tagService = EveTagServiceFactory.getEveTagService(eqpType)
         val tag = if (tagService == null) null else {
           val enumTag = tagService.tag(MapUtils.getString(x, Fields.TEXT1, ""))
