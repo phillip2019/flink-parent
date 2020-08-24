@@ -39,10 +39,6 @@ import scala.collection.JavaConversions._
   * --is.topic.regex=true
   * --reset.strategy=earliest
   * --hbase.table=ods:ods_f_test_to_dai //todo 修改表名称
-  * --mysql.url=jdbc:mysql://172.16.98.88:3306/test?useSSL=false&useUnicode=true&characterEncoding=UTF-8
-  * --mysql.username=root
-  * --mysql.password=123456
-  * --mysql.sql="select * from eve_st_settings"
   * ----------------------字段映射----------------------
   * -f=currstep=_text1_
   * -f=text1=_text1_
