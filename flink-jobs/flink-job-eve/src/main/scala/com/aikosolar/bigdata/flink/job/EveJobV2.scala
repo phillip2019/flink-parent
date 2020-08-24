@@ -8,14 +8,13 @@ import com.aikosolar.bigdata.flink.connectors.hbase.mapper.HBaseMutationConverte
 import com.aikosolar.bigdata.flink.connectors.hbase.utils.Puts
 import com.aikosolar.bigdata.flink.connectors.hbase.writter.HBaseWriterConfig.Builder
 import com.aikosolar.bigdata.flink.connectors.hbase.{HBaseOperation, HBaseSink}
-import com.aikosolar.bigdata.flink.job.conf.EveConfig
+import com.aikosolar.bigdata.flink.job.conf.EveV2Config
 import com.aikosolar.bigdata.flink.job.constants.Fields
 import com.aikosolar.bigdata.flink.job.enums.EveStep
 import com.alibaba.fastjson.JSON
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.collections.MapUtils
 import org.apache.commons.lang3.StringUtils
-import org.apache.commons.lang3.time.DateUtils
 import org.apache.flink.api.common.state.ValueStateDescriptor
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.functions.{AssignerWithPunctuatedWatermarks, KeyedProcessFunction}
@@ -52,13 +51,13 @@ import scala.collection.JavaConversions._
   *
   * @author carlc
   */
-object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
+object EveJobV2 extends FLinkKafkaRunner[EveV2Config] {
 
 
   /**
     * 构建/初始化 env
     */
-  override def setupEnv(env: StreamExecutionEnvironment, c: EveConfig): Unit = {
+  override def setupEnv(env: StreamExecutionEnvironment, c: EveV2Config): Unit = {
     super.setupEnv(env,c)
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
   }
@@ -66,7 +65,7 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
   /**
     * 配置校验
     */
-  override def validate(c: EveConfig): Unit = {
+  override def validate(c: EveV2Config): Unit = {
     if(c.topicRegex || c.topic.contains(",")){
       throw new UnsupportedOperationException("当前任务不支持批量topic")
     }
@@ -75,7 +74,7 @@ object EveJobV2 extends FLinkKafkaRunner[EveConfig] {
   /**
     * 业务方法[不需自己调用env.execute()]
     */
-  override def run0(env: StreamExecutionEnvironment, c: EveConfig, rawKafkaSource: DataStream[String]): Unit = {
+  override def run0(env: StreamExecutionEnvironment, c: EveV2Config, rawKafkaSource: DataStream[String]): Unit = {
     val dateStream: DataStream[Subscription] = rawKafkaSource
       .map(JSON.parseObject(_))
       .map(jsonObj => {
