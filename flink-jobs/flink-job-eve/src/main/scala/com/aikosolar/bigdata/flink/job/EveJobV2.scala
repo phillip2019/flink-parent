@@ -250,7 +250,7 @@ object EveJobV2 extends FLinkKafkaRunner[EveV2Config] {
 
         // 注册下一个定时器
         ctx.timerService().deleteEventTimeTimer(timer)
-        ctx.timerService().registerEventTimeTimer(Dates.toSwitchShiftTime(Dates.long2String(timer + 1000L/*加1000L是为了获取下一个换班时间点*/, Dates.fmt2), Dates.fmt2, previous.site))
+        ctx.timerService().registerEventTimeTimer(Dates.toSwitchShiftTime(Dates.long2String(timer, Dates.fmt2), Dates.fmt2, previous.site))
       }
     }
   }
