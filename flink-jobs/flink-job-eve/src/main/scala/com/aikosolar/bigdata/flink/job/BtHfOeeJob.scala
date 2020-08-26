@@ -86,7 +86,7 @@ object BtHfOeeJob extends FLinkKafkaRunner[BtHfEveConfig] {
       dateStream.print("dateStream")
     }
 
-    dateStream.addSink(new HBaseSink[BtHfSubscription](Builder.me().build(), c.tableName, new HBaseMutationConverter[BtHfSubscription] {
+    dateStream.addSink(new HBaseSink[BtHfSubscription](Builder.me().conf(c.hbaseConfig).build(), c.tableName, new HBaseMutationConverter[BtHfSubscription] {
       override def insert(data: BtHfSubscription): Put = {
         val put: Put = new Put(Bytes.toBytes(data.rowkey))
         Puts.addColumn(put, "factory", data.factory)
