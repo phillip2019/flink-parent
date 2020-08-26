@@ -2,13 +2,13 @@ package com.aikosolar.bigdata.conf
 
 import java.util
 
-import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaConfig
+import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaHBaseConfig
 import picocli.CommandLine.Option
 
 /**
   * @author carlc
   */
-class HalmAlarmConfig extends FLinkKafkaConfig {
+class HalmAlarmConfig extends FLinkKafkaHBaseConfig {
 
   //------------------------输出kafka信息--------------------------------
   @Option(names = Array("--target.bootstrap.servers"), required = true)

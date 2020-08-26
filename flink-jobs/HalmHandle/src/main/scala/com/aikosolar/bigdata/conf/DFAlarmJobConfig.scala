@@ -3,10 +3,10 @@ package com.aikosolar.bigdata.conf
 import java.util
 import java.util.Map
 
-import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaConfig
+import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaHBaseConfig
 import picocli.CommandLine.Option
 
-class DFAlarmJobConfig extends FLinkKafkaConfig {
+class DFAlarmJobConfig extends FLinkKafkaHBaseConfig {
 
   @Option(names = Array("--hbase.table"), required = true, description = Array("Hbase Table Name"))
   var tableName: String = _

@@ -2,10 +2,10 @@ package com.aikosolar.app.conf
 
 import java.util
 
-import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaConfig
+import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaHBaseConfig
 import picocli.CommandLine.Option
 
-class HalmHandleConfig extends FLinkKafkaConfig {
+class HalmHandleConfig extends FLinkKafkaHBaseConfig {
 
   @Option(names = Array("--hbase.table"), required = true, description = Array("Hbase Table Name"))
   var tablename: String = _
