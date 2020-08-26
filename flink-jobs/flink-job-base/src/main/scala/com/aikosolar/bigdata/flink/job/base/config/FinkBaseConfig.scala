@@ -24,7 +24,7 @@ class FinkBaseConfig extends ExecutionConfig.GlobalJobParameters {
   var checkpointDataUri: String = _
 
   @Option(names = Array("--cpInterval"), required = false)
-  var cpInterval: Long = 5000L
+  var cpInterval: Long = 30000L
 
   @Option(names = Array("--cpMode"), required = false)
   var cpMode: String = "EXACTLY_ONCE" // AT_LEAST_ONCE
