@@ -65,11 +65,13 @@ object BtOeeJob extends FLinkKafkaRunner[BtEveConfig] {
         BtSubscription(rowkey, factory, site, eqpId, day_date, shift, putTime, end_time, e10state, modulename, statuscode
           , module_id, createTime, 0)
       }).filter(_.module_id != null)
-      .keyBy(x => (x.eqpId, x.modulename))
-      .process(new BtprocessFunction())
+        .process(new BtProcessFunction )
 
+    val UnloadStream = dateStream.getSideOutput(new OutputTag[BtSubscription]("UnloadStream"))
 
-    dateStream.process(new OutProcessFunction() )
+    dateStream.keyBy(x => (x.eqpId, x.modulename))
+      .process(new BtKeyprocessFunction())
+
 
 
     if (!"prod".equals(c.runMode)) {
@@ -77,30 +79,47 @@ object BtOeeJob extends FLinkKafkaRunner[BtEveConfig] {
       dateStream.print("dateStream")
     }
 
-    dateStream.addSink(new HBaseSink[BtSubscription](Builder.me().build(), c.tableName, new HBaseMutationConverter[BtSubscription] {
+    def insertHbase(data: BtSubscription): Put ={
+      val put: Put = new Put(Bytes.toBytes(data.rowkey))
+      Puts.addColumn(put, "factory", data.factory)
+      Puts.addColumn(put, "site", data.site)
+      Puts.addColumn(put, "eqp_id", data.eqpId)
+      Puts.addColumn(put, "day_date", data.dayDate)
+      Puts.addColumn(put, "shift", data.shift)
+      Puts.addColumn(put, "put_time", data.putTime)
+      Puts.addColumn(put, "end_time", data.endTime)
+      Puts.addColumn(put, "e10_state", data.e10state)
+      Puts.addColumn(put, "module_name", data.modulename)
+      Puts.addColumn(put, "status_code", data.statuscode)
+      Puts.addColumn(put, "module_id", data.module_id)
+      Puts.addColumn(put, "create_time", data.createTime)
+      Puts.addColumn(put, "ct", data.ct)
+      put
+    }
+
+   dateStream.addSink(new HBaseSink[BtSubscription](Builder.me().conf(c.hbaseConfig).build(), c.tableNameMapping.get("1"), new HBaseMutationConverter[BtSubscription] {
       override def insert(data: BtSubscription): Put = {
-        val put: Put = new Put(Bytes.toBytes(data.rowkey))
-        Puts.addColumn(put, "factory", data.factory)
-        Puts.addColumn(put, "site", data.site)
-        Puts.addColumn(put, "eqp_id", data.eqpId)
-        Puts.addColumn(put, "day_date", data.dayDate)
-        Puts.addColumn(put, "shift", data.shift)
-        Puts.addColumn(put, "put_time", data.putTime)
-        Puts.addColumn(put, "end_time", data.endTime)
-        Puts.addColumn(put, "e10_state", data.e10state)
-        Puts.addColumn(put, "module_name", data.modulename)
-        Puts.addColumn(put, "status_code", data.statuscode)
-        Puts.addColumn(put, "module_id", data.module_id)
-        Puts.addColumn(put, "create_time", data.createTime)
-        Puts.addColumn(put, "ct", data.ct)
-        put
+        insertHbase(data)
       }
 
       override def delete(record: BtSubscription): Delete = {
         null
       }
     }, HBaseOperation.INSERT))
+
+    UnloadStream.addSink(new HBaseSink[BtSubscription](Builder.me().conf(c.hbaseConfig).build(), c.tableNameMapping.get("2"), new HBaseMutationConverter[BtSubscription] {
+      override def insert(data: BtSubscription): Put = {
+        insertHbase(data)
+      }
+
+      override def delete(record: BtSubscription): Delete = {
+        null
+      }
+    }, HBaseOperation.INSERT))
+
   }
+
+
 
 
   case class BtSubscription(rowkey: String,
@@ -118,11 +137,20 @@ object BtOeeJob extends FLinkKafkaRunner[BtEveConfig] {
                               createTime: String,
                               var ct: Long)
 
-  class OutProcessFunction  extends ProcessFunction [BtSubscription,BtSubscription]{
-    override def processElement(value: BtSubscription, ctx: ProcessFunction[BtSubscription, BtSubscription]#Context, out: Collector[BtSubscription]): Unit = ???
+  class BtProcessFunction  extends ProcessFunction [BtSubscription,BtSubscription]{
+    lazy val UnloadStream = new OutputTag[BtSubscription]("UnloadStream")
+
+    override def processElement(value: BtSubscription, ctx: ProcessFunction[BtSubscription, BtSubscription]#Context, out: Collector[BtSubscription]): Unit = {
+      if("Unload Station".equals(value.module_id)){
+        ctx.output(UnloadStream,value)
+      }else{
+        out.collect(value)
+      }
+    }
+
   }
 
-  class BtprocessFunction extends KeyedProcessFunction[(String, String), BtSubscription, BtSubscription] {
+  class BtKeyprocessFunction extends KeyedProcessFunction[(String, String), BtSubscription, BtSubscription] {
     lazy val previousSubscription = getRuntimeContext.getState(new ValueStateDescriptor[BtSubscription]("previous", classOf[BtSubscription]))
 
     override def processElement(value: BtSubscription, ctx: KeyedProcessFunction[(String, String), BtSubscription, BtSubscription]#Context, out: Collector[BtSubscription]): Unit = {

@@ -115,7 +115,7 @@ object EveJob extends FLinkKafkaRunner[EveConfig] {
       dateStream.print("结果")
     }
 
-    dateStream.addSink(new HBaseSink[Subscription](Builder.me().build(), c.tableName, new HBaseMutationConverter[Subscription] {
+    dateStream.addSink(new HBaseSink[Subscription](Builder.me().conf(c.hbaseConfig).build(), c.tableName, new HBaseMutationConverter[Subscription] {
       override def insert(data: Subscription): Put = {
         val put: Put = new Put(Bytes.toBytes(data.rowkey))
         Puts.addColumn(put, "factory", data.factory)
