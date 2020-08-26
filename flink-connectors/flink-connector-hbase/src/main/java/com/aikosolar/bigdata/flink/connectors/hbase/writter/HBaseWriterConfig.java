@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections.MapUtils;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -48,6 +49,15 @@ public class HBaseWriterConfig implements Serializable {
 
         public Builder conf(String key, String value) {
             this.config.put(key, value);
+            return this;
+        }
+
+        public Builder conf(Map<String, String> config) {
+            if (MapUtils.isNotEmpty(config)) {
+                for (Map.Entry<String, String> e : config.entrySet()) {
+                    this.config.put(e.getKey(), e.getValue());
+                }
+            }
             return this;
         }
 
