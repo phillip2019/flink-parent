@@ -2,10 +2,10 @@ package com.aikosolar.app.conf
 
 import java.util
 
-import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaConfig
+import com.aikosolar.bigdata.flink.job.base.config.{FLinkKafkaConfig, FLinkKafkaHBaseConfig}
 import picocli.CommandLine.Option
 
-class DFLogPreHandleConfig extends FLinkKafkaConfig {
+class DFLogPreHandleConfig extends FLinkKafkaHBaseConfig {
 
   @Option(names = Array("--target.bootstrap.servers"), required = true)
   var targetBootstrapServers: String = _

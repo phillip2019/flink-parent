@@ -3,14 +3,14 @@ package com.aikosolar.bigdata.flink.job.conf
 import java.util
 import java.util.Map
 
-import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaConfig
+import com.aikosolar.bigdata.flink.job.base.config.{FLinkKafkaConfig, FLinkKafkaHBaseConfig}
 import picocli.CommandLine.Option
 
 /**
   *
   * @author carlc
   */
-class BtHfEveConfig extends FLinkKafkaConfig {
+class BtHfEveConfig extends FLinkKafkaHBaseConfig {
 //  @Option(names = Array("-tm", "--topic.mapping"), required = false, description = Array("主题映射"))
 //  var topicMapping: Map[String, String] = new util.LinkedHashMap[String, String]()
 
