@@ -91,7 +91,7 @@ object DataLoaderWithTopicsJob extends FLinkKafkaWithTopicRunner[DataLoaderWithT
 
     val familyMapping: Map[String, String] = new HashMap[String, String]()
     familyMapping.put(Constants.DEFAULT_FAMILY_KEY, "cf")
-    kafkaSource.addSink(new DynamicHBaseSink(Builder.me().build(), c.tableMapping, familyMapping))
+    kafkaSource.addSink(new DynamicHBaseSink(Builder.me().conf(c.hbaseConfig).build(), c.tableMapping, familyMapping))
 
   }
 }

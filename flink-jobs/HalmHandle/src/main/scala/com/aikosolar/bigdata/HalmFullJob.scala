@@ -64,7 +64,7 @@ object HalmFullJob extends FLinkRunner[HalmHandleConfig]{
 
     val stream = env.addSource(source)
       .map(json=>HalmFull(json)).filter(_ !=null)
-   stream.addSink(new HBaseSink[HalmFull](Builder.me().setDurability(c.setDurability).async(c.async).writeBufferSize(c.writeBufferSize.toInt).build(), c.tablename, new HalmMutationConverter, HBaseOperation.INSERT))
+   stream.addSink(new HBaseSink[HalmFull](Builder.me().conf(c.hbaseConfig).setDurability(c.setDurability).async(c.async).writeBufferSize(c.writeBufferSize.toInt).build(), c.tablename, new HalmMutationConverter, HBaseOperation.INSERT))
 
   }
   class HalmMutationConverter extends HBaseMutationConverter[HalmFull] {

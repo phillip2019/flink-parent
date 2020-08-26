@@ -66,7 +66,7 @@ object GpDataLoaderJob extends FLinkKafkaRunner[GpDataLoaderConf] {
       x.put("row_key", RowKeyGenerator.gen(x.get("EquipmentID").toString, x.get("Come").toString))
       x
     })
-      .addSink(new SimpleHBaseTableSink(Builder.me().build(), c.gp1tableName))
+      .addSink(new SimpleHBaseTableSink(Builder.me().conf(c.hbaseConfig).build(), c.gp1tableName))
 
     // --------------------------- GP2 ---------------------------
     mapStream.getSideOutput(new OutputTag[Map[String, AnyRef]]("GP2"))
@@ -74,6 +74,6 @@ object GpDataLoaderJob extends FLinkKafkaRunner[GpDataLoaderConf] {
         x.put("row_key", RowKeyGenerator.gen(x.get("EquipmentID").toString, x.get("Come").toString))
         x
       })
-      .addSink(new SimpleHBaseTableSink(Builder.me().build(), c.gp2tableName))
+      .addSink(new SimpleHBaseTableSink(Builder.me().conf(c.hbaseConfig).build(), c.gp2tableName))
   }
 }

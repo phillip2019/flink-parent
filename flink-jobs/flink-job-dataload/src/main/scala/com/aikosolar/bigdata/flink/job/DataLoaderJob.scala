@@ -94,7 +94,7 @@ object DataLoaderJob extends FLinkKafkaRunner[DataLoaderConf] {
     if (!"prod".equals(c.runMode)) {
       kafkaSource.print()
     }
-    kafkaSource.addSink(new SimpleHBaseTableSink(Builder.me().build(), c.tableName))
+    kafkaSource.addSink(new SimpleHBaseTableSink(Builder.me().conf(c.hbaseConfig).build(), c.tableName))
   }
 }
 

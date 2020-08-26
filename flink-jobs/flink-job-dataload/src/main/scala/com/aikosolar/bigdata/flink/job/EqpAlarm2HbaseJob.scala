@@ -128,7 +128,7 @@ object EqpAlarm2HbaseJob extends FLinkKafkaRunner[DataLoaderConf] {
       kafkaSource.print()
     }
 
-    kafkaSource.addSink(new SimpleHBaseTableSink(Builder.me().build(), c.tableName))
+    kafkaSource.addSink(new SimpleHBaseTableSink(Builder.me().conf(c.hbaseConfig).build(), c.tableName))
   }
 
 }
