@@ -79,7 +79,7 @@ object TubeBoatJob extends FLinkKafkaRunner[TubeBoatJobConfig] {
                 data.put("state", State)
                 data.put("load_state", LoadState)
                 data.put("position", Position)
-                data.put("loadmode", LoadMode)
+                data.put("load_mode", LoadMode)
                 data.put("cool_time_defined", CoolTimeDefined)
                 data.put("boat_id", BoatID)
                 data.put("boat_runs", BoatRuns)
