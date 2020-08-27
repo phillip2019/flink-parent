@@ -8,7 +8,7 @@ import com.aikosolar.bigdata.flink.job.base.FLinkRunner
 import com.aikosolar.bigdata.flink.job.base.config.FLinkKafkaConfig
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010
+import org.apache.flink.streaming.connectors.kafka.{FlinkKafkaConsumer010, FlinkKafkaConsumerBase}
 
 import scala.collection.JavaConversions._
 
@@ -27,6 +27,8 @@ abstract class FLinkKafkaRunner[C <: FLinkKafkaConfig] extends FLinkRunner[C] {
     val props = new Properties()
     props.setProperty("bootstrap.servers", c.asInstanceOf[FLinkKafkaConfig].bootstrapServers)
     props.setProperty("group.id", c.asInstanceOf[FLinkKafkaConfig].groupId)
+    props.setProperty(FlinkKafkaConsumerBase.KEY_PARTITION_DISCOVERY_INTERVAL_MILLIS,
+      c.asInstanceOf[FLinkKafkaConfig].partitionDiscoveryInterval.toString)
     // 设置kafka其他参数
     c.asInstanceOf[FLinkKafkaConfig].kafkaConf.forEach(new BiConsumer[String, String] {
       override def accept(k: String, v: String): Unit = {

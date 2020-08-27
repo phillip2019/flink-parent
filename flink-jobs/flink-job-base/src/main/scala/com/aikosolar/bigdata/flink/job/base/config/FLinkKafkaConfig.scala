@@ -20,6 +20,9 @@ class FLinkKafkaConfig extends FinkBaseConfig {
   @Option(names = Array("--topic"), required = true, description = Array("Kafka Topic"))
   var topic: String = _
 
+  @Option(names = Array("--partition-discovery.interval-millis"), required = false, description = Array("分区发现时间间隔(毫秒)"))
+  var partitionDiscoveryInterval: Long = 30000
+
   @Option(names = Array("--is.topic.regex"), required = false, description = Array("topic是否为正则形式"))
   var topicRegex: Boolean = false
 
