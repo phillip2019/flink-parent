@@ -13,6 +13,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
 
         <scala.binary.version>2.11</scala.binary.version>
         <scala.version>${scala.binary.version}.12</scala.version>
@@ -120,6 +121,7 @@
 
 
     <build>
+
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
@@ -143,6 +145,22 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.0.2</version>
+                <configuration>
+                    <archive>
+                        <addMavenDescriptor>false</addMavenDescriptor>
+                        <!--
+                            MANIFEST.MF中添加Build-Time
+                        -->
+                        <manifestEntries>
+                            <Build-Time>${maven.build.timestamp}</Build-Time>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
             </plugin>
         </plugins>
 
