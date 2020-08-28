@@ -65,16 +65,6 @@ object TubeBoatJobV2 extends FLinkKafkaRunner[TubeBoatJobConfig] {
               val BoatID = MapUtils.getString(x, s"boat${id}.boatid", "").trim
               val BoatRuns = MapUtils.getString(x, s"boat${id}.boatruns", "").trim
               val RunCount = MapUtils.getString(x, s"tube${Tube.replace(prefix + "-", "")}.runcount", "").trim
-              val load_state_id=LoadState.toString match {
-                case "Loading" => 1
-                case "Wait for Loading/Unload" => 2
-                case "Wait for Loading/Unload" => 3
-                case "Processing" => 4
-                case "Wait for process" => 5
-                case "Cooling time elapsed" => 6
-                case "Cooling" => 6
-                case _ => 0
-              }
 
               if (StringUtils.isNotBlank(RunCount) && StringUtils.isNotBlank(BoatID) && StringUtils.isNotBlank(LoadState)) {
                 val data: Map[String, AnyRef] = new HashMap[String, AnyRef]()
@@ -91,7 +81,6 @@ object TubeBoatJobV2 extends FLinkKafkaRunner[TubeBoatJobConfig] {
                 data.put("boat_id", BoatID)
                 data.put("boat_runs", BoatRuns)
                 data.put("run_count", RunCount)
-                data.put("load_state_id", load_state_id.toString)
                 out.collect(data)
               }
             }
@@ -99,9 +88,6 @@ object TubeBoatJobV2 extends FLinkKafkaRunner[TubeBoatJobConfig] {
         }
       })
       .map(x => {
-
-
-
         val site = MapUtils.getString(x, "eqp_id", "").substring(0, 2)
         val factory = Sites.toFactoryId(site)
         val shift = Dates.toShift(MapUtils.getString(x, "put_time", ""), Dates.fmt2, site)
@@ -111,7 +97,15 @@ object TubeBoatJobV2 extends FLinkKafkaRunner[TubeBoatJobConfig] {
           MapUtils.getString(x, "tube_id"),
           MapUtils.getString(x, "boat_id"),
           MapUtils.getString(x, "run_count"),
-          MapUtils.getString(x, "load_state_id"),
+          MapUtils.getString(x, "load_state") match {
+            case "Loading" => "1"
+            case "Wait for Loading/Unload" => "2"
+            case "Processing" => "3"
+            case "Wait for process" => "4"
+            case "Cooling time elapsed" => "5"
+            case "Cooling" => "6"
+            case _ => "0"
+          },
           MapUtils.getString(x, "put_time")
         )
         x.put("site", site)
