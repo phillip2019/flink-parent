@@ -50,13 +50,24 @@ object TubeBoatJobV3 extends FLinkKafkaRunner[TubeBoatJobConfig] {
         result
       })
       .filter(x => Strings.isValidEqpId(x.get("eqpid")) && Strings.isValidDataTime(MapUtils.getString(x, "puttime", "")))
+      .filter(x =>
+        StringUtils.isNotBlank(MapUtils.getString(x, "tube1.runcount", ""))
+        &&
+        StringUtils.isNotBlank(MapUtils.getString(x, "tube2.runcount", ""))
+        &&
+        StringUtils.isNotBlank(MapUtils.getString(x, "tube3.runcount", ""))
+        &&
+        StringUtils.isNotBlank(MapUtils.getString(x, "tube4.runcount", ""))
+        &&
+        StringUtils.isNotBlank(MapUtils.getString(x, "tube5.runcount", ""))
+      )
       .keyBy(x =>
         (MapUtils.getString(x, "eqpid"),
-          MapUtils.getString(x, "run_count1", ""),
-          MapUtils.getString(x, "run_count2", ""),
-          MapUtils.getString(x, "run_count3", ""),
-          MapUtils.getString(x, "run_count4", ""),
-          MapUtils.getString(x, "run_count5", ""))
+          MapUtils.getString(x, "tube1.runcount", ""),
+          MapUtils.getString(x, "tube2.runcount", ""),
+          MapUtils.getString(x, "tube3.runcount", ""),
+          MapUtils.getString(x, "tube4.runcount", ""),
+          MapUtils.getString(x, "tube5.runcount", ""))
       ).process(new KeyedProcessFunction[(String, String, String, String, String, String), Map[String, AnyRef], Map[String, AnyRef]] {
       var sendFlag: ValueState[Boolean] = _
 
@@ -79,7 +90,6 @@ object TubeBoatJobV3 extends FLinkKafkaRunner[TubeBoatJobConfig] {
       }
 
       override def close(): Unit = {
-        sendFlag.clear()
       }
     }).flatMap(new FlatMapFunction[Map[String, AnyRef], Map[String, AnyRef]] {
       override def flatMap(x: util.Map[String, AnyRef], out: Collector[util.Map[String, AnyRef]]): Unit = {
@@ -156,7 +166,7 @@ object TubeBoatJobV3 extends FLinkKafkaRunner[TubeBoatJobConfig] {
       dateStream.print("结果")
     }
 
-    dateStream.addSink(new SimpleHBaseTableSink(Builder.me().conf(c.hbaseConfig).build(), c.tableName))
+    //dateStream.addSink(new SimpleHBaseTableSink(Builder.me().conf(c.hbaseConfig).build(), c.tableName))
   }
 
 }
