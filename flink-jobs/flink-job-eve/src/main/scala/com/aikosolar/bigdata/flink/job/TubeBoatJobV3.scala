@@ -74,6 +74,7 @@ object TubeBoatJobV3 extends FLinkKafkaRunner[TubeBoatJobConfig] {
       override def processElement(value: util.Map[String, AnyRef], ctx: KeyedProcessFunction[(String, String, String, String, String, String), util.Map[String, AnyRef], util.Map[String, AnyRef]]#Context, out: Collector[util.Map[String, AnyRef]]): Unit = {
         if (sendFlag.value() == null || !sendFlag.value()) {
           out.collect(value)
+          sendFlag.update(true)
         }
       }
 
