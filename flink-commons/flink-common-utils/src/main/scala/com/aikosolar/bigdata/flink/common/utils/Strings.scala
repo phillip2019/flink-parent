@@ -6,7 +6,7 @@ import java.util.regex.Pattern
   * @author carlc
   */
 object Strings {
-  val EQPID_REGEX: Pattern = Pattern.compile("^[A-Z]\\d-[A-Z]+\\d{1,2}$")
+  val EQPID_REGEX: Pattern = Pattern.compile("^[A-Z]\\d-[A-Z]+\\d{1,2}[A-Z]{0,}$")
   val DATE_TIME_REGEX: Pattern = Pattern.compile("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$")
 
   /**
